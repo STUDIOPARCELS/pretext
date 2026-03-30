@@ -3,416 +3,340 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>The Raven</title>
+<title>The Raven — Poe</title>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
-canvas { display: block; touch-action: none; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; background:#fff; }
+canvas { display:block; touch-action:none; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <script>
-// ── Embedded raven image ──────────────────────────────────────
-var RAVEN_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAhFBMVEX////7+/ujo6P4+Pibm5uenp7z8/Ourq6rq6uhoaGoqKiZmZnu7u7q6urd3d2ysrK7u7vFxcXk5OTKysrY2NjZ2dnR0dGEhISTk5PBwcGMjIzJycl7e3tkZGRxcXGJiYleXl4wMDA4ODhMTExCQkIaGhpWVlYmJiZsbGwAAABjY2M1NTXI7MZ1AAAJV0lEQVR4nO2cC1eruhKAISQ8kpCEQEMoaN1b9z6ee/7//7sBSqG1Wq1VwDXfcrmQPsyQmck8Ap4HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMC34nMezD2GL0QQHCsV4wRlfO6xfAU+U4djXdGo/mlSpmV4fEJnUSQrI7TmoT/PmG5Kujtzsm6kjEj5959fz4zV6zZQfk5ATYajMI8QRTI886a1cH/uZNP9HsRyfojk3zWem3Nsg7zErdOhnavRo/8J5N/qe8d1M9jm6E83d1J4gnZ/3A9exm/Zxt88tNsgT5SvnVEZlO1h/lSkRiKUYETjOIrVk5ljhJ9EqZMTwX1Wyq07MP/9KeNK8Mli0axw4cjOKJ6MC6/a/WLp9GQgKEPiu4Z1Owx95QWup69oiVG+wvlzhpa8+hIbBAorgtVaY7jqdQFbf+ooGI70dw3n9sg3nb+NnRddo+8coZX3pmkFaw7TWrbrnp+L+OXr5lXQtTqWCbx5TQWF/a3Wrp6Oir3yAt+pps0E/Wq9iURLV7FICSM2PX5B2S4sDbB9nmVgN4KXqRdUFrW6uJuk7r6Hcg+5RENtfTvb6G5ARbzM0n2EmU7jbma8QrrkIvfyYpah3QR/SwiauFE0HkrjceuF925u8fcP7Faof+3xMjhKKJTnN57f5rzhaUa1GvQ9OS2ZjRK6lHAXtj9Okde6HpIzcehBQj/ySu6xToHXWazwvLNRKDqcRE66pO4OVyvhOfiwLoQWIbt3odFsw/kKxK4ttfE4GS00kPMN50vIkgQdhaLpWuui70b88LzK8/L1lNSK5O81LaOV1J3CjKE+E/ow8fLrhoGhRGrPsOuGSi6/ZU58Q3FkWtHstdEluvyW2UhjhkyvmWaXXnjzC/YLPV/scrhBWA12l26zD39+aPrWyywBbxAZGwucXRN3Pe4vzxKVlMfTvomT7xoX+r/hqrxWpZqP2sqJRAW7yozErhyOFhaz8ZhNaiqBwldVAUOm7LDML6uCoRmdhMyCxB/2ny0BQT45uJclSShKOVqfH7H6qm8JGQk9e1CEajlBaVpOHOaG0OtK8Rq3Wf6kob2cSikZQ7JAsetq8H7WxT18N14d8/F19GtI7w/KxBG6LhdIEel20pjptG0/N66bkTXDkbbXxVihxPuwNZmGr2YhDRk1hB0aXyWfVkju5z1sjmK0c1v4ZiDbuxgfXw7OeBZHzVQN/Tym2cHuzLFI9KrV5ubova1U2wvuk0tMqjQcsyiXN1KpJ0kjOr5Eehkhqd+HV8GFPvyG4nZHaEj7MDMsZCvdyTedrH2ltwj6mSv2nT9/HCRXhxkpUL8ZNE8inuYqpnFmXkTjm93JKbuM+ozqht5thQlrdmd75+dnya/n/aQKgtscv0juft3TWGaivSTkxYxHpxu+1DKWwt5UUMYVJlHTDdI3iKAtSftjwvaypJMZEeWpC/F3m5MzxTKMkHemgp5plXpi67RsE7NYpDENWlOLMN3Hl3pqYfpwp4EYwmr9Yi+GWEa4FpSd6XTe0MTdjsHAS+8eIkkJicwwapU8jXOW2yE+V7aq+gmWL8pp6TK8zKYcPb15pFUvUcCPbuYpbJKafZqRKjworbaknVfnYINs96JNLxYhYJhcXOCdSXYSIcooYUmi9lMZSqv2FydV6mWlqV6CioY0OZiOn5o8z40+tiWhcGLO1IADZS9kxnQBTiZjww0dfkYYVUYIYTKZkATRSDorZISevSErjVh8oToYNnP3mrQ87A/hktEX4w3C83cm+VoxdvlOl+q65saNCAon3RAn8zEjeBM/1Ka/y+4dcbRuZlznDSE0H6aAS/Ja0ysIU23qSkmJYuTUNpJZkb6vJ6O3M1bw1X19GKVI7ETbglTkSkZRFEexdD9S1UZoHk6VjV+cvlCo5OrezS2oh3/uljTcrW5c1DKmLtBUboouWVfz9st+QpSZORfsIs4gR4nTzcBImjj/qd/tEvDb7pNfyiy/A94Y1e4gTCXGsvhgWnNaehPHVskXUm7apFwxkn3clQflaW+lOfInwQUV/i42iLxrbXiBlKchmDlOjBYhoEtix3bZR6YxjVB62ocPtt703pgFZPKBtJNVWO7GmIq9NTifZ4R08TU+viSE9zeJ7rvfs2fygqHRjWvMRq+YPh8nPW5dNHVWuSUREWsJk0PW699PPUv9wFrZxGP/tXN7GbWd9CezZtpuiSfxI88oRrHKC5HyMAxOA5gAx5v+XEF3/QRG+9pqNm+UnZfj/w/t09QDiueD6LmLp8UF23RLqKQII+PZTlQr9htJ581081EkcffPNKLS2yH5zTH70D76PttXZu9+otP60/dy8PL589O0mZ43tJ8AjfBHlawzO069qrNnf14rrHpX4MvybiKfto+oV0ll1YeX/7CbeztcvTMFjO+kC0UFKptRP8P499/eu3PErmk/m/ZDIttLOnePntY1QtH4FJVAPfzGfZ03Y/F1iXjdft45mayzP3/meoxvuE8HZ8Nr1uzrR0WCr75JR7cxuJs52l0gPvudItFDXlQqdrn9/VM/mLCyuP7Mds82XkPDTi4xe4c31cIl64FLnWRba6HYxp/d+/H4gNpIPO6sOVvMnjyRVVX+3lrL22wagv+EHn94cDHtqh8x8yrKcO7yRflICu9Kd7V0ttxrdV0yZD6+nq6Dsn8myQ493i3GDm+LRl7YtLsYvWwB/YkvQW283AVMUre3if5MnJ62QYPT1fKHisiddrr8OXSSosVuxP8cNO1qiNqJWC2hGfoF7Nr6nQuanJjVa48VWje1s78qa7uhwmM/c81ok/uuUrqtl1ESvjmmdaJdDYMWYvYk6ktot1nyrhxVevZHRm+tJXqmLWYElg+xzUZFMf0Jj6Pp6BpSps2IZZi01YMcyU07mfxu1nHdBGUxRvddTUS3UY10sQ0an/+xiP1QnwJ1ZZ5+T0pYlL/v/ntqHofHIYa5Xb+WyqSW2CaSYrJFJvRyFWhRPsYURYg0VsYU2+XcKXMVXB8qIlkU4z6oEX8iimK174C/2bhbDyFKRkH8hExaifMXGm9BUYaeiBLLCHOeJyt9wYanKXlL2J3xee4USw5PIve1dNoaZIQQGtGrWgbLw/+RoQwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfCX/B4EPYyHDIjCIAAAAAElFTkSuQmCC";
-
-var ravenImg = new Image();
-var ravenReady = false;
-
-// Offscreen canvas to create black silhouette from the outline PNG
+/* ── Raven image: black silhouette from uploaded outline PNG ── */
+var IMG_SRC = 'data:image/png;base64,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';
 var offCvs = document.createElement('canvas');
 var offCtx = offCvs.getContext('2d');
-
-ravenImg.onload = function() {
-  // Draw original, then use source-atop with black fill to make solid black
-  offCvs.width  = ravenImg.naturalWidth;
-  offCvs.height = ravenImg.naturalHeight;
-  offCtx.drawImage(ravenImg, 0, 0);
-  // Invert: the outline is dark on white — use destination-out to cut white, leave dark
-  // Better: draw black rect, composite source image with multiply-like approach
-  // Cleanest: use the image as mask
-  offCtx.globalCompositeOperation = 'source-in';
-  // Actually: image is lines on white. We want black silhouette.
-  // Draw the image normally first, then darken everything that is not white.
-  // Reset and try: draw solid black, then use destination-in with the inverted image
-  offCtx.clearRect(0, 0, offCvs.width, offCvs.height);
-  // Step 1: fill black
-  offCtx.fillStyle = '#000';
-  offCtx.globalCompositeOperation = 'source-over';
-  offCtx.fillRect(0, 0, offCvs.width, offCvs.height);
-  // Step 2: use the raven image (dark lines on white) as mask
-  // multiply: black stays black where source is dark
-  offCtx.globalCompositeOperation = 'destination-in';
-  // The image has dark pixels on white — we need to invert the alpha
-  // Draw image with multiply to keep dark pixels
-  // Simplest reliable: draw image with globalAlpha, then use it directly
-  // The PNG likely has black lines on white — use it directly with multiply blend
-  offCtx.globalCompositeOperation = 'source-over';
-  offCtx.clearRect(0, 0, offCvs.width, offCvs.height);
-  offCtx.drawImage(ravenImg, 0, 0);
-  // Now process pixels: make dark pixels opaque black, white pixels transparent
-  var imgData = offCtx.getImageData(0, 0, offCvs.width, offCvs.height);
-  var d = imgData.data;
-  for (var i = 0; i < d.length; i += 4) {
-    var brightness = (d[i] + d[i+1] + d[i+2]) / 3;
-    // Dark = part of raven, light = background
-    if (brightness < 180) {
-      d[i] = 0; d[i+1] = 0; d[i+2] = 0;
-      d[i+3] = Math.round((1 - brightness/255) * 255);
-    } else {
-      d[i+3] = 0; // transparent
+var ravenReady = false;
+var img = new Image();
+img.onload = function() {
+  offCvs.width  = img.naturalWidth;
+  offCvs.height = img.naturalHeight;
+  offCtx.clearRect(0,0,offCvs.width,offCvs.height);
+  offCtx.drawImage(img,0,0);
+  /* Convert: dark pixels → black+opaque, light pixels → transparent */
+  try {
+    var id = offCtx.getImageData(0,0,offCvs.width,offCvs.height);
+    var d  = id.data;
+    for (var i=0;i<d.length;i+=4) {
+      var lum = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+      if (lum < 200) {
+        var a = Math.round((1 - lum/200)*255);
+        d[i]=0; d[i+1]=0; d[i+2]=0; d[i+3]=Math.min(a,255);
+      } else { d[i+3]=0; }
     }
-  }
-  offCtx.putImageData(imgData, 0, 0);
+    offCtx.putImageData(id,0,0);
+  } catch(e) { /* CORS guard — shouldn't happen with data URL */ }
   ravenReady = true;
 };
-ravenImg.src = RAVEN_B64;
+img.src = IMG_SRC;
 
-// ── Canvas ────────────────────────────────────────────────────
+/* ── Canvas setup ─────────────────────────────────────────── */
 var canvas = document.getElementById('c');
-var ctx = canvas.getContext('2d');
-var DPR = Math.min(window.devicePixelRatio || 1, 2);
-var VW = window.innerWidth, VH = window.innerHeight;
+var ctx    = canvas.getContext('2d');
+var DPR    = Math.min(window.devicePixelRatio||1, 2);
+var VW, VH;
 
 function resize() {
   VW = window.innerWidth; VH = window.innerHeight;
-  canvas.width = VW * DPR; canvas.height = VH * DPR;
-  canvas.style.width = VW + 'px'; canvas.style.height = VH + 'px';
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  canvas.width  = VW*DPR; canvas.height = VH*DPR;
+  canvas.style.width  = VW+'px'; canvas.style.height = VH+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
 }
 resize();
-window.addEventListener('resize', function() { resize(); buildLines(); });
 
-// ── Font & layout ─────────────────────────────────────────────
-var FS, FONT, FONTI, FONTB, LH, PX, MW, TOP, SPW;
-
-function initLayout() {
-  FS   = Math.round(Math.min(Math.max(VW / 52, 13), 20));
-  FONT  = FS + 'px \"IM Fell English\", Georgia, serif';
-  FONTI = 'italic ' + FS + 'px \"IM Fell English\", Georgia, serif';
-  FONTB = 'bold ' + Math.round(FS * 1.5) + 'px \"IM Fell English\", Georgia, serif';
-  LH   = Math.round(FS * 2.1);
-  PX   = Math.round(VW * 0.07);
-  MW   = VW - PX * 2;
-  TOP  = Math.round(VH * 0.10);
-  ctx.font = FONT;
-  SPW = ctx.measureText(' ').width;
+/* ── Typography ───────────────────────────────────────────── */
+var FS,LH,PX,MW,TOP;
+function initTypo() {
+  FS  = Math.round(Math.min(Math.max(VW/52,13),20));
+  LH  = Math.round(FS*2.15);
+  PX  = Math.round(VW*0.07);
+  MW  = VW - PX*2;
+  TOP = Math.round(VH*0.09);
 }
-initLayout();
+initTypo();
 
-// ── Poem ──────────────────────────────────────────────────────
+function fN() { return FS+'px "IM Fell English",Georgia,serif'; }
+function fI() { return 'italic '+FS+'px "IM Fell English",Georgia,serif'; }
+function fB() { return 'bold '+Math.round(FS*1.5)+'px "IM Fell English",Georgia,serif'; }
+
+/* ── The Raven, Poe 1845 ──────────────────────────────────── */
 var POEM = [
-  {t:'THE RAVEN', f:'title'},
-  {t:'Edgar Allan Poe  —  1845', f:'sub'},
-  {t:'', f:'gap'},
-  {t:'Once upon a midnight dreary, while I pondered, weak and weary,', f:'n'},
-  {t:'Over many a quaint and curious volume of forgotten lore—', f:'n'},
-  {t:'While I nodded, nearly napping, suddenly there came a tapping,', f:'n'},
-  {t:'As of some one gently rapping, rapping at my chamber door.', f:'n'},
-  {t:'"Tis some visitor," I muttered, "tapping at my chamber door—', f:'n'},
-  {t:'Only this and nothing more."', f:'n'},
-  {t:'', f:'gap'},
-  {t:'Ah, distinctly I remember it was in the bleak December;', f:'n'},
-  {t:'And each separate dying ember wrought its ghost upon the floor;', f:'n'},
-  {t:'Eagerly I wished the morrow;—vainly I had sought to borrow', f:'n'},
-  {t:'From my books surcease of sorrow—sorrow for the lost Lenore—', f:'n'},
-  {t:'For the rare and radiant maiden whom the angels name Lenore—', f:'n'},
-  {t:'Nameless here for evermore.', f:'n'},
-  {t:'', f:'gap'},
-  {t:'And the silken, sad, uncertain rustling of each purple curtain', f:'n'},
-  {t:'Thrilled me—filled me with fantastic terrors never felt before;', f:'n'},
-  {t:'So that now, to still the beating of my heart, I stood repeating,', f:'n'},
-  {t:'"Tis some visitor entreating entrance at my chamber door—', f:'n'},
-  {t:'Some late visitor entreating entrance at my chamber door;—', f:'n'},
-  {t:'This it is and nothing more."', f:'n'},
-  {t:'', f:'gap'},
-  {t:'Deep into that darkness peering, long I stood there wondering, fearing,', f:'n'},
-  {t:'Doubting, dreaming dreams no mortal ever dared to dream before;', f:'n'},
-  {t:'But the silence was unbroken, and the stillness gave no token,', f:'n'},
-  {t:'And the only word there spoken was the whispered word, "Lenore?"', f:'n'},
-  {t:'This I whispered, and an echo murmured back the word, "Lenore!"—', f:'n'},
-  {t:'Merely this and nothing more.', f:'n'},
-  {t:'', f:'gap'},
-  {t:'Open here I flung the shutter, when, with many a flirt and flutter,', f:'n'},
-  {t:'In there stepped a stately Raven of the saintly days of yore;', f:'n'},
-  {t:'Not the least obeisance made he; not a minute stopped or stayed he;', f:'n'},
-  {t:'But, with mien of lord or lady, perched above my chamber door—', f:'n'},
-  {t:'Perched upon a bust of Pallas just above my chamber door—', f:'n'},
-  {t:'Perched, and sat, and nothing more.', f:'n'},
-  {t:'', f:'gap'},
-  {t:'Then this ebony bird beguiling my sad fancy into smiling,', f:'n'},
-  {t:'By the grave and stern decorum of the countenance it wore,', f:'n'},
-  {t:'"Though thy crest be shorn and shaven, thou," I said, "art sure no craven,', f:'n'},
-  {t:'Ghastly grim and ancient Raven wandering from the Nightly shore—', f:'n'},
-  {t:'Tell me what thy lordly name is on the Night's Plutonian shore!"', f:'n'},
-  {t:'Quoth the Raven "Nevermore."', f:'n'},
-  {t:'', f:'gap'},
-  {t:'But the Raven, sitting lonely on the placid bust, spoke only', f:'n'},
-  {t:'That one word, as if his soul in that one word he did outpour.', f:'n'},
-  {t:'Nothing further then he uttered—not a feather then he fluttered—', f:'n'},
-  {t:'Till I scarcely more than muttered "Other friends have flown before—', f:'n'},
-  {t:'On the morrow he will leave me, as my Hopes have flown before."', f:'n'},
-  {t:'Then the bird said "Nevermore."', f:'n'},
-  {t:'', f:'gap'},
-  {t:'"Prophet!" said I, "thing of evil!—prophet still, if bird or devil!—', f:'n'},
-  {t:'Whether Tempter sent, or whether tempest tossed thee here ashore,', f:'n'},
-  {t:'Desolate yet all undaunted, on this desert land enchanted—', f:'n'},
-  {t:'On this home by Horror haunted—tell me truly, I implore—', f:'n'},
-  {t:'Is there—is there balm in Gilead?—tell me—tell me, I implore!"', f:'n'},
-  {t:'Quoth the Raven "Nevermore."', f:'n'},
-  {t:'', f:'gap'},
-  {t:'And the Raven, never flitting, still is sitting, still is sitting', f:'n'},
-  {t:'On the pallid bust of Pallas just above my chamber door;', f:'n'},
-  {t:'And his eyes have all the seeming of a demon's that is dreaming,', f:'n'},
-  {t:'And the lamp-light o'er him streaming throws his shadow on the floor;', f:'n'},
-  {t:'And my soul from out that shadow that lies floating on the floor', f:'n'},
-  {t:'Shall be lifted—nevermore!', f:'n'},
+  ['THE RAVEN','B'],['Edgar Allan Poe  ·  1845','I'],['','G'],
+  ['Once upon a midnight dreary, while I pondered, weak and weary,','N'],
+  ['Over many a quaint and curious volume of forgotten lore—','N'],
+  ['While I nodded, nearly napping, suddenly there came a tapping,','N'],
+  ['As of some one gently rapping, rapping at my chamber door.','N'],
+  ['"Tis some visitor," I muttered, "tapping at my chamber door—','N'],
+  ['Only this and nothing more."','N'],['','G'],
+  ['Ah, distinctly I remember it was in the bleak December;','N'],
+  ['And each separate dying ember wrought its ghost upon the floor;','N'],
+  ['Eagerly I wished the morrow;—vainly I had sought to borrow','N'],
+  ['From my books surcease of sorrow—sorrow for the lost Lenore—','N'],
+  ['For the rare and radiant maiden whom the angels name Lenore—','N'],
+  ['Nameless here for evermore.','N'],['','G'],
+  ['And the silken, sad, uncertain rustling of each purple curtain','N'],
+  ['Thrilled me—filled me with fantastic terrors never felt before;','N'],
+  ['So that now, to still the beating of my heart, I stood repeating,','N'],
+  ['"Tis some visitor entreating entrance at my chamber door—','N'],
+  ['Some late visitor entreating entrance at my chamber door;—','N'],
+  ['This it is and nothing more."','N'],['','G'],
+  ['Presently my soul grew stronger; hesitating then no longer,','N'],
+  ['"Sir," said I, "or Madam, truly your forgiveness I implore;','N'],
+  ['But the fact is I was napping, and so gently you came rapping,','N'],
+  ['And so faintly you came tapping, tapping at my chamber door,','N'],
+  ['That I scarce was sure I heard you"—here I opened wide the door;—','N'],
+  ['Darkness there and nothing more.','N'],['','G'],
+  ['Deep into that darkness peering, long I stood there wondering, fearing,','N'],
+  ['Doubting, dreaming dreams no mortal ever dared to dream before;','N'],
+  ['But the silence was unbroken, and the stillness gave no token,','N'],
+  ['And the only word there spoken was the whispered word, "Lenore?"','N'],
+  ['Merely this and nothing more.','N'],['','G'],
+  ['Open here I flung the shutter, when, with many a flirt and flutter,','N'],
+  ['In there stepped a stately Raven of the saintly days of yore;','N'],
+  ['Not the least obeisance made he; not a minute stopped or stayed he;','N'],
+  ['But, with mien of lord or lady, perched above my chamber door—','N'],
+  ['Perched upon a bust of Pallas just above my chamber door—','N'],
+  ['Perched, and sat, and nothing more.','N'],['','G'],
+  ['Then this ebony bird beguiling my sad fancy into smiling,','N'],
+  ['By the grave and stern decorum of the countenance it wore,','N'],
+  ['"Though thy crest be shorn and shaven, thou," I said, "art sure no craven,','N'],
+  ['Ghastly grim and ancient Raven wandering from the Nightly shore—','N'],
+  ['Tell me what thy lordly name is on the Night's Plutonian shore!"','N'],
+  ['Quoth the Raven "Nevermore."','N'],['','G'],
+  ['But the Raven, sitting lonely on the placid bust, spoke only','N'],
+  ['That one word, as if his soul in that one word he did outpour.','N'],
+  ['Nothing further then he uttered—not a feather then he fluttered—','N'],
+  ['Till I scarcely more than muttered "Other friends have flown before—','N'],
+  ['On the morrow he will leave me, as my Hopes have flown before."','N'],
+  ['Then the bird said "Nevermore."','N'],['','G'],
+  ['"Prophet!" said I, "thing of evil!—prophet still, if bird or devil!—','N'],
+  ['Whether Tempter sent, or whether tempest tossed thee here ashore,','N'],
+  ['Desolate yet all undaunted, on this desert land enchanted—','N'],
+  ['On this home by Horror haunted—tell me truly, I implore—','N'],
+  ['Is there—is there balm in Gilead?—tell me—tell me, I implore!"','N'],
+  ['Quoth the Raven "Nevermore."','N'],['','G'],
+  ['And the Raven, never flitting, still is sitting, still is sitting','N'],
+  ['On the pallid bust of Pallas just above my chamber door;','N'],
+  ['And his eyes have all the seeming of a demon's that is dreaming,','N'],
+  ['And the lamp-light o'er him streaming throws his shadow on the floor;','N'],
+  ['And my soul from out that shadow that lies floating on the floor','N'],
+  ['Shall be lifted—nevermore!','N'],
 ];
 
-// ── Words ─────────────────────────────────────────────────────
+/* ── Word list ────────────────────────────────────────────── */
 var words = [];
-
-function getFont(f) {
-  if (f === 'title') return FONTB;
-  if (f === 'sub')   return FONTI;
-  return FONT;
+function fontForCode(c) {
+  if (c==='B') return fB();
+  if (c==='I') return fI();
+  return fN();
 }
 
 function buildLines() {
-  initLayout();
+  initTypo();
   words = [];
   var y = TOP + LH;
-  for (var pi = 0; pi < POEM.length; pi++) {
-    var line = POEM[pi];
-    if (line.f === 'gap' || !line.t) { y += LH * 0.5; continue; }
-    var fnt = getFont(line.f);
-    ctx.font = fnt;
+  for (var pi=0; pi<POEM.length; pi++) {
+    var txt = POEM[pi][0], code = POEM[pi][1];
+    if (code==='G' || !txt) { y += LH*0.5; continue; }
+    var f  = fontForCode(code);
+    ctx.font = f;
     var sp = ctx.measureText(' ').width;
-    var toks = line.t.split(' ').filter(function(s){ return s.length > 0; });
-    var row = [], rw = 0;
-    for (var ti = 0; ti < toks.length; ti++) {
-      var tok = toks[ti];
-      var tw = ctx.measureText(tok).width;
-      var add = row.length ? sp + tw : tw;
-      if (row.length && rw + add > MW) { flushRow(row, y, fnt, sp); y += LH; row = []; rw = 0; }
-      row.push({ text: tok, w: tw });
-      rw += row.length > 1 ? sp + tw : tw;
+    var toks = txt.split(' ').filter(function(s){return s.length>0;});
+    var row=[], rw=0;
+    for (var ti=0; ti<toks.length; ti++) {
+      var tok=toks[ti], tw=ctx.measureText(tok).width;
+      var add = row.length ? sp+tw : tw;
+      if (row.length && rw+add > MW) { pushRow(row,y,f,sp); y+=LH; row=[]; rw=0; }
+      row.push({t:tok,w:tw});
+      rw += row.length>1 ? sp+tw : tw;
     }
-    if (row.length) { flushRow(row, y, fnt, sp); y += LH; }
+    if (row.length) { pushRow(row,y,f,sp); y+=LH; }
   }
 }
-
-function flushRow(row, y, fnt, sp) {
-  var x = PX;
-  for (var i = 0; i < row.length; i++) {
-    var wd = row[i];
-    words.push({ text: wd.text, w: wd.w, font: fnt, baseX: x, baseY: y, x: x, y: y, tx: x, ty: y });
-    x += wd.w + sp;
+function pushRow(row,y,f,sp) {
+  var x=PX;
+  for (var i=0;i<row.length;i++) {
+    words.push({t:row[i].t, w:row[i].w, f:f, bx:x, by:y, x:x, y:y, tx:x, ty:y});
+    x += row[i].w + sp;
   }
 }
-
 buildLines();
 if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(function(){ setTimeout(buildLines, 60); });
+  document.fonts.ready.then(function(){ setTimeout(buildLines, 80); });
 }
 
-// ── Raven position & physics ──────────────────────────────────
-var RS = Math.min(VW, VH) * 0.32; // render size of raven (pixels)
-var rx = VW * 0.55, ry = VH * 0.35;
-var rtx = rx, rty = ry;
-var autoT = 0;
-var dragging = false, dragOX = 0, dragOY = 0;
+/* ── Raven physics ────────────────────────────────────────── */
+/* Image natural size ~240×240 (square). Raven faces left, standing. */
+/* We render it at RW×RH pixels centered on (rx,ry).               */
+var rx=VW*0.55, ry=VH*0.32, rtx=rx, rty=ry;
+var autoT=0, dragging=false, dox=0, doy=0;
 
-// Aspect ratio of the raven image (will update once loaded)
-var imgAR = 1.2; // width/height approx from the square-ish image
+function RW() { return Math.min(VW,VH)*0.34; }
+function RH() { return RW(); } /* square source image */
 
-function ravenW() { return RS; }
-function ravenH() { return ravenReady ? RS / (offCvs.width / offCvs.height) : RS * 0.8; }
+/* Exclusion: ellipses mapped to raven anatomy in normalised [0,1] space */
+/* Raven occupies roughly: body 0.2-0.8 x, 0.25-0.75 y                  */
+var ZONES = [
+  {nx:0.48, ny:0.45, erx:0.18, ery:0.20}, /* body */
+  {nx:0.22, ny:0.28, erx:0.12, ery:0.13}, /* head */
+  {nx:0.10, ny:0.26, erx:0.07, ery:0.06}, /* beak */
+  {nx:0.50, ny:0.70, erx:0.12, ery:0.10}, /* legs */
+  {nx:0.72, ny:0.58, erx:0.10, ery:0.08}, /* tail */
+  {nx:0.35, ny:0.35, erx:0.10, ery:0.12}, /* neck/upper body */
+];
 
-// Exclusion circles for text reflow (relative to raven center)
-// Image is roughly: body center, two wings spread left/right, tail right, head+beak top-left
-function getExclusions(lineY) {
-  var rw = ravenW(), rh = ravenH();
-  // raven center is at (rx, ry); image drawn from top-left offset
-  var imgX = rx - rw * 0.5;
-  var imgY = ry - rh * 0.5;
-
-  // Define elliptical hit zones relative to image corners (normalized 0-1)
-  var zones = [
-    { nx: 0.5,  ny: 0.42, rx2: 0.20, ry2: 0.22 }, // main body
-    { nx: 0.18, ny: 0.30, rx2: 0.14, ry2: 0.15 }, // left wing tip area
-    { nx: 0.82, ny: 0.30, rx2: 0.14, ry2: 0.15 }, // right wing spread
-    { nx: 0.20, ny: 0.18, rx2: 0.10, ry2: 0.12 }, // head
-    { nx: 0.08, ny: 0.16, rx2: 0.06, ry2: 0.06 }, // beak
-    { nx: 0.50, ny: 0.75, rx2: 0.12, ry2: 0.10 }, // legs/feet
-    { nx: 0.72, ny: 0.60, rx2: 0.10, ry2: 0.08 }, // tail lower
-  ];
-
-  var ivs = [];
-  for (var i = 0; i < zones.length; i++) {
-    var z = zones[i];
-    var cx = imgX + z.nx * rw;
-    var cy = imgY + z.ny * rh;
-    var zrx = z.rx2 * rw * 1.3;
-    var zry = z.ry2 * rh * 1.5;
-    var dy = Math.abs(lineY - cy);
-    if (dy >= zry) continue;
-    var ratio = dy / zry;
-    var xs = zrx * Math.sqrt(1 - ratio * ratio);
-    ivs.push([cx - xs, cx + xs]);
+function exclusionsForY(ly) {
+  var rw=RW(), rh=RH();
+  var imgX = rx - rw*0.5, imgY = ry - rh*0.5;
+  var ivs=[];
+  for (var i=0;i<ZONES.length;i++) {
+    var z=ZONES[i];
+    var cx = imgX + z.nx*rw,  cy = imgY + z.ny*rh;
+    var ex = z.erx*rw*1.35,   ey = z.ery*rh*1.55;
+    var dy = Math.abs(ly-cy);
+    if (dy>=ey) continue;
+    var xs = ex * Math.sqrt(1-(dy/ey)*(dy/ey));
+    ivs.push([cx-xs, cx+xs]);
   }
-
-  ivs.sort(function(a,b){ return a[0]-b[0]; });
-  var merged = [];
-  for (var j = 0; j < ivs.length; j++) {
-    var iv = ivs[j];
-    if (merged.length && iv[0] <= merged[merged.length-1][1])
-      merged[merged.length-1][1] = Math.max(merged[merged.length-1][1], iv[1]);
-    else merged.push([iv[0], iv[1]]);
+  ivs.sort(function(a,b){return a[0]-b[0];});
+  var m=[];
+  for (var j=0;j<ivs.length;j++) {
+    if (m.length && ivs[j][0]<=m[m.length-1][1])
+      m[m.length-1][1]=Math.max(m[m.length-1][1],ivs[j][1]);
+    else m.push([ivs[j][0],ivs[j][1]]);
   }
-  return merged;
+  return m;
 }
 
 function freeSegs(excl) {
-  var segs = [], cur = PX, right = PX + MW, GAP = SPW * 0.5;
-  for (var i = 0; i < excl.length; i++) {
-    var a = excl[i][0] - GAP, b = excl[i][1] + GAP;
-    if (cur + 20 < a) segs.push([cur, a]);
-    cur = b;
+  var segs=[], cur=PX, right=PX+MW, G=ctx.measureText(' ').width*0.5;
+  for (var i=0;i<excl.length;i++) {
+    var a=excl[i][0]-G, b=excl[i][1]+G;
+    if (a > cur+10) segs.push([cur, a]);
+    if (b > cur)    cur=b;
   }
   if (cur < right) segs.push([cur, right]);
-  return segs.length ? segs : [[PX, PX + MW]];
+  /* Always return at least one segment that's within page bounds */
+  if (!segs.length) segs.push([PX, PX+MW]);
+  return segs;
 }
 
-// ── Reflow ────────────────────────────────────────────────────
+/* ── Reflow ────────────────────────────────────────────────── */
 function reflow() {
   if (!words.length) return;
-  ctx.font = FONT;
+  var wi=0, y=TOP+LH;
+  ctx.font = fN();
   var spw = ctx.measureText(' ').width;
-  var wi = 0, y = TOP + LH;
-
-  while (wi < words.length) {
-    var baseY = words[wi].baseY;
-    var row = [];
-    while (wi < words.length && words[wi].baseY === baseY) row.push(words[wi++]);
-
-    var excl = getExclusions(y);
-    var segs = freeSegs(excl);
-    var si = 0, cx2 = segs[0][0];
-
-    for (var ri = 0; ri < row.length; ri++) {
-      var wd = row[ri];
-      ctx.font = wd.font;
-      var placed = false;
-      while (si < segs.length) {
-        if (cx2 + wd.w <= segs[si][1] + 1) {
-          wd.tx = cx2; wd.ty = y; cx2 += wd.w + spw; placed = true; break;
+  while (wi<words.length) {
+    var by=words[wi].by, row=[];
+    while (wi<words.length && words[wi].by===by) row.push(words[wi++]);
+    var excl=exclusionsForY(y), segs=freeSegs(excl);
+    var si=0, cx2=segs[0][0];
+    for (var ri=0;ri<row.length;ri++) {
+      var wd=row[ri];
+      var placed=false;
+      while (si<segs.length) {
+        /* Clamp cx2 to segment start */
+        if (cx2 < segs[si][0]) cx2=segs[si][0];
+        if (cx2+wd.w <= segs[si][1]+1) {
+          wd.tx=cx2; wd.ty=y; cx2+=wd.w+spw; placed=true; break;
         }
-        si++; if (si < segs.length) cx2 = segs[si][0];
+        si++; if (si<segs.length) cx2=segs[si][0];
       }
       if (!placed) {
-        y += LH; excl = getExclusions(y); segs = freeSegs(excl);
-        si = 0; cx2 = segs[0][0];
-        wd.tx = cx2; wd.ty = y; cx2 += wd.w + spw;
+        /* Overflow to next line */
+        y+=LH; excl=exclusionsForY(y); segs=freeSegs(excl);
+        si=0; cx2=segs[0][0];
+        wd.tx=cx2; wd.ty=y; cx2+=wd.w+spw;
       }
     }
-    y += LH;
+    y+=LH;
   }
 }
 
-// ── Draw ──────────────────────────────────────────────────────
+/* ── Draw ──────────────────────────────────────────────────── */
 function drawRaven() {
-  var rw = ravenW(), rh = ravenH();
+  var rw=RW(), rh=RH();
   if (ravenReady) {
-    // Draw the processed silhouette (black on transparent)
-    ctx.drawImage(offCvs, rx - rw * 0.5, ry - rh * 0.5, rw, rh);
+    ctx.drawImage(offCvs, rx-rw*0.5, ry-rh*0.5, rw, rh);
   } else {
-    // Fallback circle while image processes
-    ctx.beginPath();
-    ctx.arc(rx, ry, rw * 0.3, 0, Math.PI * 2);
-    ctx.fillStyle = '#111'; ctx.fill();
+    /* Placeholder while image processes */
+    ctx.fillStyle='rgba(0,0,0,0.08)';
+    ctx.beginPath(); ctx.ellipse(rx,ry,rw*0.35,rh*0.28,0,0,Math.PI*2); ctx.fill();
   }
 }
 
 function drawText() {
-  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
-  ctx.textBaseline = 'alphabetic';
-  for (var i = 0; i < words.length; i++) {
-    var w = words[i];
-    if (w.y < -LH * 2 || w.y > VH + LH * 2) continue;
-    ctx.font = w.font; ctx.fillStyle = 'rgba(12,10,8,0.86)';
-    ctx.fillText(w.text, w.x, w.y);
+  ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+  ctx.textBaseline='alphabetic'; ctx.fillStyle='rgba(12,10,8,0.86)';
+  for (var i=0;i<words.length;i++) {
+    var w=words[i];
+    if (w.y < -LH*2 || w.y > VH+LH*2) continue;
+    ctx.font=w.f; ctx.fillText(w.t, w.x, w.y);
   }
 }
 
-// ── Pointer ───────────────────────────────────────────────────
-function hitTest(ex, ey) {
-  var rw = ravenW(), rh = ravenH();
-  return ex > rx - rw * 0.55 && ex < rx + rw * 0.55 &&
-         ey > ry - rh * 0.55 && ey < ry + rh * 0.55;
+/* ── Pointer ───────────────────────────────────────────────── */
+function hit(ex,ey) {
+  var rw=RW(),rh=RH();
+  return ex>rx-rw*0.55&&ex<rx+rw*0.55&&ey>ry-rh*0.55&&ey<ry+rh*0.55;
 }
-
-canvas.addEventListener('mousedown', function(e) {
-  if (hitTest(e.clientX, e.clientY)) {
-    dragging = true; dragOX = e.clientX - rx; dragOY = e.clientY - ry;
-    canvas.style.cursor = 'grabbing';
-  }
+canvas.addEventListener('mousedown',function(e){
+  if(hit(e.clientX,e.clientY)){dragging=true;dox=e.clientX-rx;doy=e.clientY-ry;canvas.style.cursor='grabbing';}
 });
-window.addEventListener('mousemove', function(e) {
-  if (dragging) { rtx = e.clientX - dragOX; rty = e.clientY - dragOY; }
-  else canvas.style.cursor = hitTest(e.clientX, e.clientY) ? 'grab' : 'default';
+window.addEventListener('mousemove',function(e){
+  if(dragging){rtx=e.clientX-dox;rty=e.clientY-doy;}
+  else canvas.style.cursor=hit(e.clientX,e.clientY)?'grab':'default';
 });
-window.addEventListener('mouseup', function() { dragging = false; canvas.style.cursor = 'default'; });
+window.addEventListener('mouseup',function(){dragging=false;canvas.style.cursor='default';});
+canvas.addEventListener('touchstart',function(e){
+  e.preventDefault();var t=e.touches[0];
+  if(hit(t.clientX,t.clientY)){dragging=true;dox=t.clientX-rx;doy=t.clientY-ry;}
+},{passive:false});
+canvas.addEventListener('touchmove',function(e){
+  e.preventDefault();if(dragging){rtx=e.touches[0].clientX-dox;rty=e.touches[0].clientY-doy;}
+},{passive:false});
+canvas.addEventListener('touchend',function(){dragging=false;});
 
-canvas.addEventListener('touchstart', function(e) {
-  e.preventDefault();
-  var t = e.touches[0];
-  if (hitTest(t.clientX, t.clientY)) { dragging = true; dragOX = t.clientX - rx; dragOY = t.clientY - ry; }
-}, { passive: false });
-canvas.addEventListener('touchmove', function(e) {
-  e.preventDefault();
-  if (dragging) { rtx = e.touches[0].clientX - dragOX; rty = e.touches[0].clientY - dragOY; }
-}, { passive: false });
-canvas.addEventListener('touchend', function() { dragging = false; });
-
-// ── Loop ──────────────────────────────────────────────────────
-var last = 0;
+/* ── Loop ──────────────────────────────────────────────────── */
+var last=0;
 function frame(ts) {
-  var dt = Math.min((ts - last) / 1000, 0.05); last = ts;
-
+  var dt=Math.min((ts-last)/1000,0.05); last=ts;
   if (!dragging) {
-    autoT += dt * 0.22;
-    var driftX = VW * 0.52 + Math.sin(autoT * 0.7) * VW * 0.14;
-    var driftY = VH * 0.32 + Math.sin(autoT) * VH * 0.07;
-    rtx += (driftX - rtx) * 0.003;
-    rty += (driftY - rty) * 0.003;
+    autoT+=dt*0.22;
+    var dx=VW*0.52+Math.sin(autoT*0.7)*VW*0.14;
+    var dy2=VH*0.32+Math.sin(autoT)*VH*0.07;
+    rtx+=(dx-rtx)*0.004; rty+=(dy2-rty)*0.004;
   }
-
-  rx += (rtx - rx) * 0.13;
-  ry += (rty - ry) * 0.13;
-
+  rx+=(rtx-rx)*0.13; ry+=(rty-ry)*0.13;
   reflow();
-
-  var L = 0.14;
-  for (var i = 0; i < words.length; i++) {
-    words[i].x += (words[i].tx - words[i].x) * L;
-    words[i].y += (words[i].ty - words[i].y) * L;
+  var L=0.14;
+  for (var i=0;i<words.length;i++) {
+    words[i].x+=(words[i].tx-words[i].x)*L;
+    words[i].y+=(words[i].ty-words[i].y)*L;
   }
-
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, VW, VH);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,VW,VH);
   drawText();
   drawRaven();
-
-  ctx.font = '10px Georgia, serif';
-  ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('drag the raven', PX, VH - 16);
-
+  ctx.font='10px Georgia,serif'; ctx.fillStyle='rgba(0,0,0,0.12)';
+  ctx.textBaseline='alphabetic';
+  ctx.fillText('drag the raven',PX,VH-16);
   requestAnimationFrame(frame);
 }
-
+window.addEventListener('resize',function(){resize();buildLines();});
 requestAnimationFrame(frame);
 </script>
 </body>
