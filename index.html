@@ -3,225 +3,497 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>pretext</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=DM+Mono:wght@300&display=swap" rel="stylesheet">
+<title>The Raven</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f2ec; }
-canvas { display: block; touch-action: none; }
-#label {
-  position: fixed; bottom: 22px; right: 24px;
-  font-family: 'DM Mono', monospace; font-weight: 300;
-  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
-  color: rgba(0,0,0,0.18); pointer-events: none; user-select: none;
-}
+html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
+canvas { display: block; touch-action: none; cursor: grab; }
+canvas.dragging { cursor: grabbing; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="label">ctx.measureText() · canvas physics</div>
 <script>
-(async function() {
-  const canvas = document.getElementById('c');
-  const ctx    = canvas.getContext('2d');
-  const DPR    = Math.min(window.devicePixelRatio || 1, 2);
-  let VW = window.innerWidth, VH = window.innerHeight;
+(async function () {
 
-  function resize() {
-    VW = window.innerWidth; VH = window.innerHeight;
-    canvas.width  = VW * DPR; canvas.height = VH * DPR;
-    canvas.style.width = VW + 'px'; canvas.style.height = VH + 'px';
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  }
-  resize();
+// ── Canvas ─────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const DPR    = Math.min(window.devicePixelRatio || 1, 2);
+let VW = window.innerWidth, VH = window.innerHeight;
 
-  await document.fonts.ready;
-  await new Promise(r => setTimeout(r, 100));
+function resize() {
+  VW = window.innerWidth; VH = window.innerHeight;
+  canvas.width  = VW * DPR; canvas.height = VH * DPR;
+  canvas.style.width = VW + 'px'; canvas.style.height = VH + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+resize();
+await document.fonts.ready;
+await new Promise(r => setTimeout(r, 120));
 
-  // Typography
-  const FS   = Math.round(Math.min(Math.max(VW / 46, 14), 26));
-  const FONT = FS + 'px "Cormorant Garamond", Georgia, serif';
-  const LH   = FS * 1.95;
-  const PX   = VW * 0.09;
-  const PY   = VH * 0.13;
-  const MW   = VW - PX * 2;
+// ── Layout constants ────────────────────────────────────────────────────────
+const FS   = Math.round(Math.min(Math.max(VW / 52, 13), 20));
+const FONT = FS + 'px "IM Fell English", Georgia, serif';
+const FONT_I = 'italic ' + FONT;
+const LH   = Math.round(FS * 2.0);
+const PX   = Math.round(VW * 0.07);
+const MW   = VW - PX * 2;
+const TOP  = Math.round(VH * 0.09);
 
-  const PARAGRAPHS = [
-    'Words have weight. They occupy space. They push and yield and find their balance between breath and boundary.',
-    'ctx.measureText() pre-computes every word into a data object with a baseX, a current x, and a targetX. Each frame the dragon emits collision nodes. For every line of text it projects each node onto the line Y axis, computes the exclusion span via the square root of r squared minus dy squared, merges overlapping intervals, then runs a relaxation solver to find stable non-overlapping target positions.',
-    'Words lerp toward those targets each frame — giving the parting and closing flow you see. Platform APIs already shipped in every browser, still criminally underexplored.',
-  ];
+// ── The Raven — Edgar Allan Poe (1845, public domain) ─────────────────────
+const POEM_LINES = [
+  ["THE RAVEN", true],
+  ["Edgar Allan Poe", true],
+  ["—", false],
+  ["Once upon a midnight dreary, while I pondered, weak and weary,", false],
+  ["Over many a quaint and curious volume of forgotten lore—", false],
+  ["While I nodded, nearly napping, suddenly there came a tapping,", false],
+  ["As of some one gently rapping, rapping at my chamber door.", false],
+  ['"\'Tis some visitor," I muttered, "tapping at my chamber door—', false],
+  ["Only this and nothing more."", false],
+  [" ", false],
+  ["Ah, distinctly I remember it was in the bleak December;", false],
+  ["And each separate dying ember wrought its ghost upon the floor;", false],
+  ["Eagerly I wished the morrow;—vainly I had sought to borrow", false],
+  ["From my books surcease of sorrow—sorrow for the lost Lenore—", false],
+  ["For the rare and radiant maiden whom the angels name Lenore—", false],
+  ["Nameless here for evermore.", false],
+  [" ", false],
+  ["And the silken, sad, uncertain rustling of each purple curtain", false],
+  ["Thrilled me—filled me with fantastic terrors never felt before;", false],
+  ["So that now, to still the beating of my heart, I stood repeating,", false],
+  ['"\'Tis some visitor entreating entrance at my chamber door—', false],
+  ["Some late visitor entreating entrance at my chamber door;—", false],
+  ["This it is and nothing more."", false],
+  [" ", false],
+  ["Presently my soul grew stronger; hesitating then no longer,", false],
+  ['"Sir," said I, "or Madam, truly your forgiveness I implore;', false],
+  ["But the fact is I was napping, and so gently you came rapping,", false],
+  ["And so faintly you came tapping, tapping at my chamber door,", false],
+  ["That I scarce was sure I heard you"—here I opened wide the door;—", false],
+  ["Darkness there and nothing more.", false],
+  [" ", false],
+  ["Deep into that darkness peering, long I stood there wondering, fearing,", false],
+  ["Doubting, dreaming dreams no mortal ever dared to dream before;", false],
+  ["But the silence was unbroken, and the stillness gave no token,", false],
+  ["And the only word there spoken was the whispered word, "Lenore?"", false],
+  ["This I whispered, and an echo murmured back the word, "Lenore!"—", false],
+  ["Merely this and nothing more.", false],
+  [" ", false],
+  ["Back into the chamber turning, all my soul within me burning,", false],
+  ["Soon again I heard a tapping somewhat louder than before.", false],
+  ['"Surely," said I, "surely that is something at my window lattice;', false],
+  ["Let me see, then, what thereat is, and this mystery explore—", false],
+  ["Let my heart be still a moment and this mystery explore;—", false],
+  ["'Tis the wind and nothing more!"", false],
+  [" ", false],
+  ["Open here I flung the shutter, when, with many a flirt and flutter,", false],
+  ["In there stepped a stately Raven of the saintly days of yore;", false],
+  ["Not the least obeisance made he; not a minute stopped or stayed he;", false],
+  ["But, with mien of lord or lady, perched above my chamber door—", false],
+  ["Perched upon a bust of Pallas just above my chamber door—", false],
+  ["Perched, and sat, and nothing more.", false],
+  [" ", false],
+  ["Then this ebony bird beguiling my sad fancy into smiling,", false],
+  ["By the grave and stern decorum of the countenance it wore,", false],
+  ['"Though thy crest be shorn and shaven, thou," I said, "art sure no craven,', false],
+  ["Ghastly grim and ancient Raven wandering from the Nightly shore—", false],
+  ["Tell me what thy lordly name is on the Night's Plutonian shore!"", false],
+  ['Quoth the Raven "Nevermore."', false],
+  [" ", false],
+  ["Much I marvelled this ungainly fowl to hear discourse so plainly,", false],
+  ["Though its answer little meaning—little relevancy bore;", false],
+  ["For we cannot help agreeing that no living human being", false],
+  ["Ever yet was blessed with seeing bird above his chamber door—", false],
+  ["Bird or beast upon the sculptured bust above his chamber door,", false],
+  ['With such name as "Nevermore."', false],
+  [" ", false],
+  ["But the Raven, sitting lonely on the placid bust, spoke only", false],
+  ["That one word, as if his soul in that one word he did outpour.", false],
+  ["Nothing further then he uttered—not a feather then he fluttered—", false],
+  ["Till I scarcely more than muttered "Other friends have flown before—", false],
+  ["On the morrow he will leave me, as my Hopes have flown before."", false],
+  ['Then the bird said "Nevermore."', false],
+  [" ", false],
+  ["Startled at the stillness broken by reply so aptly spoken,", false],
+  ['"Doubtless," said I, "what it utters is its only stock and store', false],
+  ["Caught from some unhappy master whom unmerciful Disaster", false],
+  ["Followed fast and followed faster till his songs one burden bore—", false],
+  ["Till the dirges of his Hope that melancholy burden bore", false],
+  ['Of "Never—nevermore"."', false],
+  [" ", false],
+  ["But the Raven still beguiling my sad fancy into smiling,", false],
+  ["Straight I wheeled a cushioned seat in front of bird, and bust and door;", false],
+  ["Then, upon the velvet sinking, I betook myself to linking", false],
+  ["Fancy unto fancy, thinking what this ominous bird of yore—", false],
+  ["What this grim, ungainly, ghastly, gaunt, and ominous bird of yore", false],
+  ['Meant in croaking "Nevermore."', false],
+  [" ", false],
+  ["This I sat engaged in guessing, but no syllable expressing", false],
+  ["To the fowl whose fiery eyes now burned into my bosom's core;", false],
+  ["This and more I sat divining, with my head at ease reclining", false],
+  ["On the cushion's velvet lining that the lamp-light gloated o'er,", false],
+  ["But whose velvet-violet lining with the lamp-light gloating o'er,", false],
+  ["She shall press, ah, nevermore!", false],
+  [" ", false],
+  ["Then, methought, the air grew denser, perfumed from an unseen censer", false],
+  ["Swung by Seraphim whose foot-falls tinkled on the tufted floor.", false],
+  ['"Wretch," I cried, "thy God hath lent thee—by these angels he hath sent thee', false],
+  ["Respite—respite and nepenthe, from thy memories of Lenore;", false],
+  ["Quaff, oh quaff this kind nepenthe and forget this lost Lenore!"", false],
+  ['Quoth the Raven "Nevermore."', false],
+  [" ", false],
+  ['"Prophet!" said I, "thing of evil!—prophet still, if bird or devil!—', false],
+  ["Whether Tempter sent, or whether tempest tossed thee here ashore,", false],
+  ["Desolate yet all undaunted, on this desert land enchanted—", false],
+  ["On this home by Horror haunted—tell me truly, I implore—", false],
+  ["Is there—is there balm in Gilead?—tell me—tell me, I implore!"", false],
+  ['Quoth the Raven "Nevermore."', false],
+  [" ", false],
+  ['"Prophet!" said I, "thing of evil—prophet still, if bird or devil!', false],
+  ["By that Heaven that bends above us—by that God we both adore—", false],
+  ["Tell this soul with sorrow laden if, within the distant Aidenn,", false],
+  ["It shall clasp a sainted maiden whom the angels name Lenore—", false],
+  ["Clasp a rare and radiant maiden whom the angels name Lenore."", false],
+  ['Quoth the Raven "Nevermore."', false],
+  [" ", false],
+  ['"Be that word our sign of parting, bird or fiend!" I shrieked, upstarting—', false],
+  ['"Get thee back into the tempest and the Night\'s Plutonian shore!', false],
+  ["Leave no black plume as a token of that lie thy soul hath spoken!", false],
+  ["Leave my loneliness unbroken!—quit the bust above my door!", false],
+  ["Take thy beak from out my heart, and take thy form from off my door!"", false],
+  ['Quoth the Raven "Nevermore."', false],
+  [" ", false],
+  ["And the Raven, never flitting, still is sitting, still is sitting", false],
+  ["On the pallid bust of Pallas just above my chamber door;", false],
+  ["And his eyes have all the seeming of a demon's that is dreaming,", false],
+  ["And the lamp-light o'er him streaming throws his shadow on the floor;", false],
+  ["And my soul from out that shadow that lies floating on the floor", false],
+  ["Shall be lifted—nevermore!", false],
+];
 
-  // Word lines
-  let lines = [];
+// ── Flatten poem into words with metadata ──────────────────────────────────
+ctx.font = FONT;
+const SPW = ctx.measureText(' ').width;
 
-  function buildLines() {
-    lines = [];
-    ctx.font = FONT;
-    const spW = ctx.measureText(' ').width;
-    let y = PY + LH;
-    for (const para of PARAGRAPHS) {
-      const all = para.split(/\s+/).filter(Boolean);
-      let row = [], rw = 0;
-      for (const word of all) {
-        const w = ctx.measureText(word).width;
-        if (row.length && rw + spW + w > MW) {
-          flush(row, y, spW); y += LH; row = []; rw = 0;
-        }
-        row.push({ text: word, w });
-        rw += (row.length > 1 ? spW : 0) + w;
-      }
-      if (row.length) { flush(row, y, spW); y += LH; }
-      y += LH * 0.55;
-    }
-  }
+// Build flat word list from poem lines
+const words = [];
+let naturalY = TOP;
 
-  function flush(row, y, spW) {
+for (const [lineText, isTitle] of POEM_LINES) {
+  if (lineText === ' ') { naturalY += LH * 0.5; continue; }
+
+  const fnt = isTitle ? (lineText === 'THE RAVEN' ? 'bold ' + FONT : FONT_I) : FONT;
+  ctx.font = fnt;
+  const tokens = lineText.split(/\s+/).filter(Boolean);
+  let lineWords = [];
+  let rowW = 0;
+
+  function flushRow(row, y) {
     let x = PX;
-    lines.push({ y, words: row.map(({ text, w }) => {
-      const obj = { text, baseX: x, x, w };
-      x += w + spW; return obj;
-    })});
-  }
-
-  buildLines();
-
-  // Snake / dragon
-  const N = 130, DIST = 9;
-  const radii = new Float32Array(N);
-  for (let i = 0; i < N; i++) {
-    const t = i / (N - 1);
-    radii[i] = 3 + 13 * Math.sin(Math.PI * Math.pow(t, 0.5)) * Math.pow(1 - t * 0.3, 1.3);
-  }
-  const sx = new Float32Array(N), sy = new Float32Array(N);
-  for (let i = 0; i < N; i++) { sx[i] = VW * 0.5 + i * DIST; sy[i] = VH * 0.5; }
-
-  let mx = VW * 0.5, my = VH * 0.5, hasMouse = false, autoT = 0;
-
-  canvas.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; hasMouse = true; });
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); mx = e.touches[0].clientX; my = e.touches[0].clientY; hasMouse = true; }, { passive: false });
-  canvas.addEventListener('touchmove',  e => { e.preventDefault(); mx = e.touches[0].clientX; my = e.touches[0].clientY; }, { passive: false });
-
-  function stepSnake(dt) {
-    if (!hasMouse) {
-      autoT += dt * 0.42;
-      const a = 1 + Math.cos(autoT) ** 2;
-      mx = VW * 0.5 + VW * 0.30 * Math.sin(autoT) / a;
-      my = VH * 0.5 + VH * 0.22 * Math.sin(autoT) * Math.cos(autoT) / a;
-    }
-    sx[0] += (mx - sx[0]) * 0.22;
-    sy[0] += (my - sy[0]) * 0.22;
-    for (let i = 1; i < N; i++) {
-      const dx = sx[i] - sx[i-1], dy = sy[i] - sy[i-1];
-      const d = Math.sqrt(dx*dx + dy*dy) || 1e-6;
-      const f = (d - DIST) / d;
-      sx[i] -= dx * f * 0.5; sy[i] -= dy * f * 0.5;
+    const sp = ctx.measureText(' ').width;
+    for (const w of row) {
+      words.push({ text: w.text, w: w.w, font: fnt, baseX: x, baseY: y, x, y, tx: x, ty: y });
+      x += w.w + sp;
     }
   }
 
-  function resolveWords(words, lineY) {
-    const ivs = [];
-    for (let i = 0; i < N; i++) {
-      const r = radii[i] * 1.6, dy = Math.abs(sy[i] - lineY);
-      if (dy >= r) continue;
-      const xs = Math.sqrt(r*r - dy*dy);
-      ivs.push([sx[i] - xs, sx[i] + xs]);
+  for (const tok of tokens) {
+    const w = ctx.measureText(tok).width;
+    const add = lineWords.length ? SPW + w : w;
+    if (lineWords.length && rowW + add > MW) {
+      flushRow(lineWords, naturalY); naturalY += LH;
+      lineWords = []; rowW = 0;
     }
-    ivs.sort((a,b) => a[0]-b[0]);
-    const merged = [];
-    for (const iv of ivs) {
-      if (merged.length && iv[0] <= merged[merged.length-1][1])
-        merged[merged.length-1][1] = Math.max(merged[merged.length-1][1], iv[1]);
-      else merged.push([...iv]);
+    lineWords.push({ text: tok, w });
+    rowW += lineWords.length > 1 ? SPW + w : w;
+  }
+  if (lineWords.length) { flushRow(lineWords, naturalY); naturalY += LH; }
+}
+
+const CONTENT_H = naturalY + LH;
+
+// ── Raven ──────────────────────────────────────────────────────────────────
+const RS = Math.min(VW, VH) / 380; // scale
+let rx = VW * 0.55, ry = VH * 0.32;
+let rtx = rx, rty = ry;
+let ravenAngle = 0;
+let flapT = 0;
+let autoT = 0;
+let dragging = false, dragOffX = 0, dragOffY = 0;
+
+// Raven exclusion circles (local space, before scale)
+const RC = [
+  { dx:  0,    dy: -2,   r: 34 },
+  { dx: -48,   dy: -10,  r: 24 },
+  { dx:  48,   dy: -10,  r: 24 },
+  { dx: -85,   dy:  -4,  r: 18 },
+  { dx:  85,   dy:  -4,  r: 18 },
+  { dx: -24,   dy: -20,  r: 14 },
+  { dx:  32,   dy:  18,  r: 13 },
+];
+
+function getExclusionsAtY(lineY) {
+  const ivs = [];
+  const cos = Math.cos(ravenAngle), sin = Math.sin(ravenAngle);
+  for (const c of RC) {
+    const wcx = (c.dx * cos - c.dy * sin) * RS + rx;
+    const wcy = (c.dx * sin + c.dy * cos) * RS + ry;
+    const wr  = c.r * RS * 1.4;
+    const dy  = Math.abs(lineY - wcy);
+    if (dy >= wr) continue;
+    const xs = Math.sqrt(wr*wr - dy*dy);
+    ivs.push([wcx - xs, wcx + xs]);
+  }
+  ivs.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const iv of ivs) {
+    if (merged.length && iv[0] <= merged[merged.length-1][1])
+      merged[merged.length-1][1] = Math.max(merged[merged.length-1][1], iv[1]);
+    else merged.push([...iv]);
+  }
+  return merged;
+}
+
+function getFreeSegments(excl) {
+  const segs = [];
+  let cur = PX;
+  const right = PX + MW;
+  const GAP = 6;
+  for (const [a, b] of excl) {
+    if (cur + 20 < a) segs.push([cur, a - GAP]);
+    cur = b + GAP;
+  }
+  if (cur < right) segs.push([cur, right]);
+  return segs.length ? segs : [[PX, PX + MW]];
+}
+
+// ── Reflow: compute target positions ──────────────────────────────────────
+function reflow() {
+  let wi = 0;
+  let y  = TOP;
+
+  // Group words by natural line (same baseY) — one line at a time
+  while (wi < words.length) {
+    const lineY = words[wi].baseY;
+
+    // Collect all words that originally belong to this line
+    const lineWords = [];
+    while (wi < words.length && words[wi].baseY === lineY) {
+      lineWords.push(words[wi++]);
     }
-    if (!merged.length) { for (const w of words) w.x += (w.baseX - w.x) * 0.10; return; }
 
-    ctx.font = FONT;
-    const spW = ctx.measureText(' ').width, GAP = spW * 0.5;
-    const tgt = words.map(w => w.baseX);
+    const excl = getExclusionsAtY(y);
+    const segs = getFreeSegments(excl);
 
-    function clear(x, ww) {
-      let changed = true, g = 0;
-      while (changed && g++ < 60) {
-        changed = false;
-        for (const [a, b] of merged) {
-          if (x < b + GAP && x + ww > a - GAP) {
-            const mid = (a+b)*0.5;
-            x = (x + ww*0.5 > mid) ? b + GAP : a - ww - GAP;
-            changed = true; break;
-          }
+    // Distribute words into free segments
+    let si = 0, sx2 = segs[0][0], li = 0;
+    for (const w of lineWords) {
+      // Find a segment that fits this word
+      let placed = false;
+      while (si < segs.length) {
+        if (sx2 + w.w <= segs[si][1] + 1) {
+          w.tx = sx2;
+          w.ty = y;
+          sx2 += w.w + SPW;
+          placed = true;
+          break;
         }
+        si++;
+        if (si < segs.length) sx2 = segs[si][0];
       }
-      return x;
+      if (!placed) {
+        // Overflow: push to next line
+        y += LH;
+        const e2 = getExclusionsAtY(y);
+        const s2 = getFreeSegments(e2);
+        si = 0; sx2 = s2[0][0];
+        w.tx = sx2;
+        w.ty = y;
+        sx2 += w.w + SPW;
+      }
     }
 
-    for (let i = 0; i < words.length; i++) {
-      if (i > 0) tgt[i] = Math.max(tgt[i], tgt[i-1] + words[i-1].w + spW);
-      tgt[i] = clear(tgt[i], words[i].w);
-    }
-    for (let i = words.length - 1; i >= 0; i--) {
-      let t = Math.min(tgt[i], words[i].baseX);
-      t = clear(t, words[i].w);
-      if (i < words.length - 1) t = Math.min(t, tgt[i+1] - words[i].w - spW);
-      tgt[i] = t;
-    }
-    for (let i = 0; i < words.length; i++) words[i].x += (tgt[i] - words[i].x) * 0.12;
+    y += LH;
+  }
+}
+
+// ── Draw raven ─────────────────────────────────────────────────────────────
+function drawRaven() {
+  ctx.save();
+  ctx.translate(rx, ry);
+  ctx.rotate(ravenAngle);
+  ctx.scale(RS, RS);
+
+  const flap = Math.sin(flapT) * 12; // wing arc oscillation
+
+  ctx.fillStyle = '#111';
+  ctx.shadowColor = 'rgba(0,0,0,0.18)';
+  ctx.shadowBlur  = 22 / RS;
+  ctx.shadowOffsetY = 4 / RS;
+
+  // ── Body ──
+  ctx.beginPath();
+  ctx.moveTo(22, 2);
+  ctx.bezierCurveTo(22, -12, 4, -18, -18, -10);
+  ctx.bezierCurveTo(-28, -5, -28,  6, -18,  11);
+  ctx.bezierCurveTo(4,  18, 22,  12, 22,  2);
+  ctx.fill();
+
+  // ── Left wing ──
+  ctx.beginPath();
+  ctx.moveTo(-2, -6);
+  ctx.bezierCurveTo(-22, -14 - flap, -58, -20 - flap * 0.5, -88, -6 - flap * 0.3);
+  ctx.bezierCurveTo(-72, -2, -42,  8, -8,  4);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Right wing ──
+  ctx.beginPath();
+  ctx.moveTo(2, -6);
+  ctx.bezierCurveTo(22, -14 - flap, 58, -20 - flap * 0.5, 88, -6 - flap * 0.3);
+  ctx.bezierCurveTo(72, -2, 42,  8, 8,  4);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Head ──
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.arc(-23, -16, 11, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── Beak ──
+  ctx.beginPath();
+  ctx.moveTo(-31, -19);
+  ctx.lineTo(-50, -16);
+  ctx.lineTo(-31, -11);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Tail feathers ──
+  ctx.beginPath();
+  ctx.moveTo(20, 6);
+  ctx.bezierCurveTo(28, 8, 46, 24, 50, 30);
+  ctx.bezierCurveTo(44, 22, 38, 28, 32, 22);
+  ctx.bezierCurveTo(30, 28, 24, 18, 20, 12);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Eye ──
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(-26, -18, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(-27, -18, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ── Draw text ──────────────────────────────────────────────────────────────
+function drawText() {
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur  = 0;
+  ctx.textBaseline = 'alphabetic';
+  for (const w of words) {
+    if (w.y < -LH || w.y > VH + LH) continue;
+    ctx.font      = w.font;
+    ctx.fillStyle = 'rgba(15,12,10,0.85)';
+    ctx.fillText(w.text, w.x, w.y);
+  }
+}
+
+// ── Drag ──────────────────────────────────────────────────────────────────
+function hitRaven(ex, ey) {
+  const dx = ex - rx, dy = ey - ry;
+  return Math.sqrt(dx*dx + dy*dy) < 90 * RS;
+}
+
+canvas.addEventListener('mousedown', e => {
+  if (hitRaven(e.clientX, e.clientY)) {
+    dragging = true;
+    dragOffX = e.clientX - rx;
+    dragOffY = e.clientY - ry;
+    canvas.classList.add('dragging');
+  }
+});
+window.addEventListener('mousemove', e => {
+  if (dragging) { rtx = e.clientX - dragOffX; rty = e.clientY - dragOffY; }
+});
+window.addEventListener('mouseup', () => { dragging = false; canvas.classList.remove('dragging'); });
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  if (hitRaven(t.clientX, t.clientY)) {
+    dragging = true;
+    dragOffX = t.clientX - rx;
+    dragOffY = t.clientY - ry;
+  }
+}, { passive: false });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (dragging) { rtx = e.touches[0].clientX - dragOffX; rty = e.touches[0].clientY - dragOffY; }
+}, { passive: false });
+canvas.addEventListener('touchend', () => { dragging = false; });
+
+// ── Render loop ────────────────────────────────────────────────────────────
+let last = 0;
+function frame(ts) {
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+
+  flapT += dt * (dragging ? 4.5 : 2.2);
+
+  if (!dragging) {
+    autoT += dt * 0.28;
+    const driftX = VW * 0.5 + Math.sin(autoT * 0.9) * VW * 0.16;
+    const driftY = VH * 0.32 + Math.sin(autoT) * VH * 0.10;
+    rtx += (driftX - rtx) * 0.003;
+    rty += (driftY - rty) * 0.003;
   }
 
-  function drawDragon() {
-    ctx.save();
-    // Body back to front
-    for (let i = N-1; i >= 1; i--) {
-      const t = 1 - i/(N-1);
-      const a = 0.07 + t*t*0.58;
-      ctx.beginPath();
-      ctx.arc(sx[i], sy[i], radii[i], 0, Math.PI*2);
-      ctx.fillStyle = 'rgba(185,18,18,' + a.toFixed(3) + ')';
-      ctx.fill();
-    }
-    // Spine
-    ctx.beginPath(); ctx.moveTo(sx[0], sy[0]);
-    for (let i = 1; i < N; i+=2) {
-      const qx = (sx[i]+sx[i-1])*0.5, qy = (sy[i]+sy[i-1])*0.5;
-      ctx.quadraticCurveTo(sx[i-1], sy[i-1], qx, qy);
-    }
-    ctx.strokeStyle = 'rgba(200,25,25,0.10)'; ctx.lineWidth = 1.5; ctx.stroke();
-    // Head glow
-    ctx.shadowColor = 'rgba(200,0,0,0.30)'; ctx.shadowBlur = 20;
-    ctx.beginPath(); ctx.arc(sx[0], sy[0], radii[0]+1, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(215,22,22,0.95)'; ctx.fill();
-    // Eye
-    ctx.shadowBlur = 0;
-    const ex = sx[0] + (sx[0]-sx[3])*0.25, ey = sy[0] + (sy[0]-sy[3])*0.25;
-    ctx.beginPath(); ctx.arc(ex, ey, 1.6, 0, Math.PI*2);
-    ctx.fillStyle = '#fff8f0'; ctx.fill();
-    ctx.restore();
+  // Smooth raven position
+  rx += (rtx - rx) * 0.12;
+  ry += (rty - ry) * 0.12;
+
+  // Banking angle from horizontal velocity
+  const vx = rtx - rx;
+  ravenAngle = vx * 0.004;
+
+  // Reflow text around raven
+  reflow();
+
+  // Lerp words toward targets
+  const L = 0.14;
+  for (const w of words) {
+    w.x += (w.tx - w.x) * L;
+    w.y += (w.ty - w.y) * L;
   }
 
-  function drawText() {
-    ctx.save();
-    ctx.font = FONT; ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = 'rgba(12,8,5,0.82)';
-    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
-    for (const line of lines)
-      for (const w of line.words)
-        ctx.fillText(w.text, w.x, line.y);
-    ctx.restore();
-  }
+  // Draw
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, VW, VH);
 
-  let last = 0;
-  function frame(ts) {
-    const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.fillStyle = '#f5f2ec'; ctx.fillRect(0, 0, VW, VH);
-    stepSnake(dt);
-    for (const line of lines) resolveWords(line.words, line.y);
-    drawDragon(); drawText();
-    requestAnimationFrame(frame);
-  }
+  drawText();
+  drawRaven();
 
-  window.addEventListener('resize', () => { resize(); buildLines(); });
+  // Subtle attribution
+  ctx.font = '10px "IM Fell English", Georgia, serif';
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Drag the raven', PX, VH - 18);
+
   requestAnimationFrame(frame);
+}
+
+window.addEventListener('resize', () => { resize(); });
+requestAnimationFrame(frame);
+
 })();
 </script>
 </body>
