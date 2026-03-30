@@ -7,148 +7,106 @@
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{width:100%;height:100%;overflow:hidden;background:#fff;}
-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
-#gl{touch-action:none;}
-#tx{pointer-events:none;}
+html,body{width:100%;height:100%;overflow:hidden;background:#f9f7f2;}
+canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%;touch-action:none;}
 </style>
 </head>
 <body>
-<canvas id="gl"></canvas>
-<canvas id="tx"></canvas>
+<canvas id="c"></canvas>
 <script>
-var RSRC="data:image/png;base64,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";
-var POEM=[
-["THE RAVEN","B"],["Edgar Allan Poe · 1845","I"],["","G"],
-["Once upon a midnight dreary, while I pondered, weak and weary,","N"],
-["Over many a quaint and curious volume of forgotten lore—","N"],
-["While I nodded, nearly napping, suddenly there came a tapping,","N"],
-["As of some one gently rapping, rapping at my chamber door.","N"],
-["Only this and nothing more.","N"],["","G"],
-["Ah, distinctly I remember it was in the bleak December;","N"],
-["And each separate dying ember wrought its ghost upon the floor;","N"],
-["Eagerly I wished the morrow;—vainly I had sought to borrow","N"],
-["From my books surcease of sorrow—sorrow for the lost Lenore—","N"],
-["For the rare and radiant maiden whom the angels name Lenore—","N"],
-["Nameless here for evermore.","N"],["","G"],
-["And the silken, sad, uncertain rustling of each purple curtain","N"],
-["Thrilled me—filled me with fantastic terrors never felt before;","N"],
-["So that now, to still the beating of my heart, I stood repeating,","N"],
-["This it is and nothing more.","N"],["","G"],
-["Deep into that darkness peering, long I stood there wondering, fearing,","N"],
-["Doubting, dreaming dreams no mortal ever dared to dream before;","N"],
-["But the silence was unbroken, and the stillness gave no token,","N"],
-["Merely this and nothing more.","N"],["","G"],
-["Open here I flung the shutter, when, with many a flirt and flutter,","N"],
-["In there stepped a stately Raven of the saintly days of yore;","N"],
-["Not the least obeisance made he; not a minute stopped or stayed he;","N"],
-["But, with mien of lord or lady, perched above my chamber door—","N"],
-["Perched upon a bust of Pallas just above my chamber door—","N"],
-["Perched, and sat, and nothing more.","N"],["","G"],
-["Then this ebony bird beguiling my sad fancy into smiling,","N"],
-["By the grave and stern decorum of the countenance it wore,","N"],
-["Ghastly grim and ancient Raven wandering from the Nightly shore—","N"],
-["Tell me what thy lordly name is on the Plutonian shore!","N"],
-["Quoth the Raven “Nevermore.”","N"],["","G"],
-["But the Raven, sitting lonely on the placid bust, spoke only","N"],
-["That one word, as if his soul in that one word he did outpour.","N"],
-["Nothing further then he uttered—not a feather then he fluttered—","N"],
-["On the morrow he will leave me, as my Hopes have flown before.","N"],
-["Then the bird said “Nevermore.”","N"],["","G"],
-["Whether Tempter sent, or whether tempest tossed thee here ashore,","N"],
-["Desolate yet all undaunted, on this desert land enchanted—","N"],
-["On this home by Horror haunted—tell me truly, I implore—","N"],
-["Is there—is there balm in Gilead?—tell me—tell me, I implore!","N"],
-["Quoth the Raven “Nevermore.”","N"],["","G"],
-["And the Raven, never flitting, still is sitting, still is sitting","N"],
-["On the pallid bust of Pallas just above my chamber door;","N"],
-["And his eyes have all the seeming of a demon that is dreaming,","N"],
-["And the lamp-light streaming throws his shadow on the floor;","N"],
-["And my soul from out that shadow that lies floating on the floor","N"],
-["Shall be lifted—nevermore!","N"]
+/* =============================================================
+   THE RAVEN — Poe 1845
+   Procedurally animated raven + text reflow physics
+   ============================================================= */
+
+/* ── Poem (all unicode — zero apostrophes in JS strings) ────────── */
+var POEM = [
+  ["THE RAVEN","B"],
+  ["Edgar Allan Poe  ·  1845","I"],["","G"],
+  ["Once upon a midnight dreary, while I pondered, weak and weary,","N"],
+  ["Over many a quaint and curious volume of forgotten lore—","N"],
+  ["While I nodded, nearly napping, suddenly there came a tapping,","N"],
+  ["As of some one gently rapping, rapping at my chamber door.","N"],
+  ["Only this and nothing more.","N"],["","G"],
+  ["Ah, distinctly I remember it was in the bleak December;","N"],
+  ["And each separate dying ember wrought its ghost upon the floor;","N"],
+  ["Eagerly I wished the morrow;—vainly I had sought to borrow","N"],
+  ["From my books surcease of sorrow—sorrow for the lost Lenore—","N"],
+  ["For the rare and radiant maiden whom the angels name Lenore—","N"],
+  ["Nameless here for evermore.","N"],["","G"],
+  ["And the silken sad uncertain rustling of each purple curtain","N"],
+  ["Thrilled me—filled me with fantastic terrors never felt before;","N"],
+  ["So that now to still the beating of my heart I stood repeating,","N"],
+  ["This it is and nothing more.","N"],["","G"],
+  ["Deep into that darkness peering, long I stood there wondering, fearing,","N"],
+  ["Doubting, dreaming dreams no mortal ever dared to dream before;","N"],
+  ["But the silence was unbroken, and the stillness gave no token,","N"],
+  ["Merely this and nothing more.","N"],["","G"],
+  ["Open here I flung the shutter, when, with many a flirt and flutter,","N"],
+  ["In there stepped a stately Raven of the saintly days of yore;","N"],
+  ["Not the least obeisance made he; not a minute stopped or stayed he;","N"],
+  ["But with mien of lord or lady perched above my chamber door—","N"],
+  ["Perched upon a bust of Pallas just above my chamber door—","N"],
+  ["Perched, and sat, and nothing more.","N"],["","G"],
+  ["Then this ebony bird beguiling my sad fancy into smiling,","N"],
+  ["By the grave and stern decorum of the countenance it wore,","N"],
+  ["Ghastly grim and ancient Raven wandering from the Nightly shore—","N"],
+  ["Tell me what thy lordly name is on the Plutonian shore!","N"],
+  ["Quoth the Raven “Nevermore.”","N"],["","G"],
+  ["But the Raven sitting lonely on the placid bust spoke only","N"],
+  ["That one word as if his soul in that one word he did outpour.","N"],
+  ["Nothing further then he uttered—not a feather then he fluttered—","N"],
+  ["On the morrow he will leave me as my Hopes have flown before.","N"],
+  ["Then the bird said “Nevermore.”","N"],["","G"],
+  ["Whether Tempter sent or whether tempest tossed thee here ashore,","N"],
+  ["Desolate yet all undaunted on this desert land enchanted—","N"],
+  ["On this home by Horror haunted—tell me truly I implore—","N"],
+  ["Is there—is there balm in Gilead?—tell me—tell me I implore!","N"],
+  ["Quoth the Raven “Nevermore.”","N"],["","G"],
+  ["And the Raven never flitting still is sitting still is sitting","N"],
+  ["On the pallid bust of Pallas just above my chamber door;","N"],
+  ["And his eyes have all the seeming of a demon that is dreaming,","N"],
+  ["And the lamp-light streaming throws his shadow on the floor;","N"],
+  ["And my soul from out that shadow that lies floating on the floor","N"],
+  ["Shall be lifted—nevermore!","N"]
 ];
 
-var VW=window.innerWidth,VH=window.innerHeight;
-var DPR=Math.min(window.devicePixelRatio||1,2);
-var glC=document.getElementById("gl"),txC=document.getElementById("tx");
-var gl=glC.getContext("webgl")||glC.getContext("experimental-webgl");
-var ctx=txC.getContext("2d");
-
+/* ── Canvas ──────────────────────────────────────────────────────── */
+var cvs = document.getElementById("c");
+var ctx = cvs.getContext("2d");
+var DPR = Math.min(window.devicePixelRatio||1,2);
+var VW,VH;
 function setSize(){
-  VW=window.innerWidth;VH=window.innerHeight;
-  glC.width=VW*DPR;glC.height=VH*DPR;
-  glC.style.width=VW+"px";glC.style.height=VH+"px";
-  txC.width=VW*DPR;txC.height=VH*DPR;
-  txC.style.width=VW+"px";txC.style.height=VH+"px";
+  VW=window.innerWidth; VH=window.innerHeight;
+  cvs.width=VW*DPR; cvs.height=VH*DPR;
+  cvs.style.width=VW+"px"; cvs.style.height=VH+"px";
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  if(gl)gl.viewport(0,0,glC.width,glC.height);
 }
 setSize();
 window.addEventListener("resize",function(){setSize();buildLines();});
 
-/* WebGL */
-var prog,uTex,uRaven,ravenTex=null;
-if(gl){
-  var vs="attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=vec4(p,0,1);}";
-  var fs=[
-    "precision mediump float;",
-    "varying vec2 v;",
-    "uniform sampler2D u;",
-    "uniform vec4 r;",
-    "void main(){",
-    "  vec4 c=vec4(1);",
-    "  vec2 l=(v-r.xy)/r.zw;",
-    "  if(l.x>0.&&l.x<1.&&l.y>0.&&l.y<1.){",
-    "    vec4 t=texture2D(u,vec2(l.x,1.-l.y));",
-    "    float lm=dot(t.rgb,vec3(.299,.587,.114));",
-    "    float a=clamp((1.-lm)*3.,0.,1.)*t.a;",
-    "    c=mix(c,vec4(.06,.05,.04,1.),a);",
-    "  }",
-    "  gl_FragColor=c;",
-    "}"
-  ].join("");
-  function sh(type,src){var s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;}
-  prog=gl.createProgram();
-  gl.attachShader(prog,sh(gl.VERTEX_SHADER,vs));
-  gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,fs));
-  gl.linkProgram(prog);gl.useProgram(prog);
-  var buf=gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
-  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-  var ap=gl.getAttribLocation(prog,"p");
-  gl.enableVertexAttribArray(ap);gl.vertexAttribPointer(ap,2,gl.FLOAT,false,0,0);
-  uTex=gl.getUniformLocation(prog,"u");
-  uRaven=gl.getUniformLocation(prog,"r");
-  var img=new Image();
-  img.onload=function(){
-    ravenTex=gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D,ravenTex);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  };
-  img.src=RSRC;
-}
-
-/* Typography */
+/* ── Typography ─────────────────────────────────────────────────── */
 var FS,LH,PX,MW,TOP;
-function it(){FS=Math.round(Math.min(Math.max(VW/52,13),21));LH=Math.round(FS*2.1);PX=Math.round(VW*.07);MW=VW-PX*2;TOP=Math.round(VH*.09);}
+function it(){
+  FS=Math.round(Math.min(Math.max(VW/52,13),21));
+  LH=Math.round(FS*2.1); PX=Math.round(VW*.07);
+  MW=VW-PX*2; TOP=Math.round(VH*.09);
+}
 it();
 function fN(){return FS+'px "IM Fell English",Georgia,serif';}
 function fI(){return "italic "+FS+'px "IM Fell English",Georgia,serif';}
 function fB(){return "bold "+Math.round(FS*1.5)+'px "IM Fell English",Georgia,serif';}
 function fc(c){return c==="B"?fB():c==="I"?fI():fN();}
 
+/* ── Words ────────────────────────────────────────────────────────── */
 var words=[];
 function buildLines(){
-  it();words=[];
+  it(); words=[];
   var y=TOP+LH;
   for(var i=0;i<POEM.length;i++){
     var txt=POEM[i][0],code=POEM[i][1];
     if(code==="G"||!txt){y+=LH*.5;continue;}
-    var f=fc(code);ctx.font=f;
+    var f=fc(code); ctx.font=f;
     var sp=ctx.measureText(" ").width;
     var toks=txt.split(" ").filter(function(s){return s.length>0;});
     var row=[],rw=0;
@@ -156,7 +114,8 @@ function buildLines(){
       var tw=ctx.measureText(toks[j]).width;
       var add=row.length?sp+tw:tw;
       if(row.length&&rw+add>MW){flush(row,y,f,sp);y+=LH;row=[];rw=0;}
-      row.push({t:toks[j],w:tw});rw+=row.length>1?sp+tw:tw;
+      row.push({t:toks[j],w:tw});
+      rw+=row.length>1?sp+tw:tw;
     }
     if(row.length){flush(row,y,f,sp);y+=LH;}
   }
@@ -169,45 +128,268 @@ function flush(row,y,f,sp){
   }
 }
 buildLines();
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){setTimeout(buildLines,80);});
+if(document.fonts&&document.fonts.ready)
+  document.fonts.ready.then(function(){setTimeout(buildLines,80);});
 
-/* Raven */
-var rx=VW*.55,ry=VH*.32,rtx=rx,rty=ry,autoT=0,drag=false,dox=0,doy=0;
-function RW(){return Math.min(VW,VH)*.36;}
-var Z=[{nx:.48,ny:.45,ex:.18,ey:.20},{nx:.22,ny:.28,ex:.12,ey:.13},{nx:.10,ny:.26,ex:.07,ey:.06},{nx:.50,ny:.72,ex:.12,ey:.10},{nx:.72,ny:.58,ex:.10,ey:.08},{nx:.35,ny:.36,ex:.10,ey:.12}];
+/* =============================================================
+   ANIMATED RAVEN — fully procedural, drawn every frame
+   ============================================================= */
+var T=0; /* global animation time */
 
-function excl(ly){
-  var rw=RW(),ox=rx-rw*.5,oy=ry-rw*.5,ivs=[];
-  for(var i=0;i<Z.length;i++){
-    var z=Z[i],cx=ox+z.nx*rw,cy=oy+z.ny*rw;
-    var ex=z.ex*rw*1.4,ey=z.ey*rw*1.6;
-    var dy=Math.abs(ly-cy);
-    if(dy>=ey)continue;
-    var xs=ex*Math.sqrt(1-(dy/ey)*(dy/ey));
-    ivs.push([cx-xs,cx+xs]);
+/* Raven centre position */
+var rx=0,ry=0,rtx=0,rty=0,autoT=0;
+var drag=false,dox=0,doy=0;
+
+/* All measurements in a local "unit" coordinate space scaled by RS */
+var RS; /* pixels per unit — set in setRS() */
+function setRS(){ RS=Math.min(VW,VH)*0.0016; }
+setRS();
+
+/* ── Raven drawing ─────────────────────────────────────────────── */
+function drawRaven(cx,cy,t){
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.scale(RS,RS);
+
+  /* animation values */
+  var flap  = Math.sin(t*3.8)*22 + Math.sin(t*7.1)*6;     /* primary flap */
+  var flap2 = Math.sin(t*3.8+0.6)*14;                      /* secondary tip */
+  var bodyBob = Math.sin(t*1.9)*3;                          /* body bob */
+  var tailFan = Math.sin(t*2.3)*8;                          /* tail spread */
+  var headTilt= Math.sin(t*1.3)*6;                          /* head look */
+  var breathe = Math.sin(t*1.1)*2;                          /* chest breathe */
+  var blink   = Math.sin(t*0.7)>0.92 ? 1 : 0;              /* blink */
+
+  ctx.fillStyle = "#111";
+  ctx.strokeStyle = "#111";
+  ctx.lineJoin = "round";
+  ctx.lineCap  = "round";
+
+  /* ── SHADOW ── */
+  ctx.save();
+  ctx.globalAlpha=0.07;
+  ctx.scale(1,0.3);
+  ctx.translate(0,260+bodyBob*3);
+  ctx.beginPath();
+  ctx.ellipse(0,0,110,40,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  /* ── LEFT WING ── */
+  ctx.save();
+  ctx.translate(-10,bodyBob-10);
+  ctx.rotate((flap*0.012));
+  /* primary feathers */
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.bezierCurveTo(-40,-10-flap*0.5,-90,-20-flap,-130,-5-flap*0.4);
+  ctx.bezierCurveTo(-110,10,-70,18,-20,12);
+  ctx.closePath(); ctx.fill();
+  /* secondary tip */
+  ctx.beginPath();
+  ctx.moveTo(-80,-18-flap*0.8);
+  ctx.bezierCurveTo(-100,-28-flap-flap2,-140,-30-flap-flap2,-150,-18-flap*0.6);
+  ctx.bezierCurveTo(-135,-8-flap*0.4,-105,-5-flap*0.3,-80,-12-flap*0.5);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  /* ── RIGHT WING ── */
+  ctx.save();
+  ctx.translate(10,bodyBob-10);
+  ctx.rotate((-flap*0.012));
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.bezierCurveTo(40,-10-flap*0.5,90,-20-flap,130,-5-flap*0.4);
+  ctx.bezierCurveTo(110,10,70,18,20,12);
+  ctx.closePath(); ctx.fill();
+  /* tip */
+  ctx.beginPath();
+  ctx.moveTo(80,-18-flap*0.8);
+  ctx.bezierCurveTo(100,-28-flap-flap2,140,-30-flap-flap2,150,-18-flap*0.6);
+  ctx.bezierCurveTo(135,-8-flap*0.4,105,-5-flap*0.3,80,-12-flap*0.5);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  /* ── BODY ── */
+  ctx.save();
+  ctx.translate(0,bodyBob);
+  ctx.beginPath();
+  ctx.moveTo(30,0);
+  ctx.bezierCurveTo(32,-20+breathe,14,-38,-10,-36);
+  ctx.bezierCurveTo(-32,-34,-46,-18,-44,0+breathe);
+  ctx.bezierCurveTo(-44,20,-26,36,4,34);
+  ctx.bezierCurveTo(24,32,28,16,30,0);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  /* ── TAIL FEATHERS ── */
+  ctx.save();
+  ctx.translate(0,bodyBob+32);
+  /* centre tail */
+  ctx.beginPath();
+  ctx.moveTo(-8,0); ctx.bezierCurveTo(-10,20,-8,60,-4,72);
+  ctx.bezierCurveTo(-2,76,2,76,4,72);
+  ctx.bezierCurveTo(8,60,10,20,8,0);
+  ctx.closePath(); ctx.fill();
+  /* left fan */
+  ctx.save(); ctx.rotate(-tailFan*0.022);
+  ctx.beginPath();
+  ctx.moveTo(-14,2); ctx.bezierCurveTo(-22,22,-30,56,-34,66);
+  ctx.bezierCurveTo(-32,70,-28,70,-24,64);
+  ctx.bezierCurveTo(-16,50,-10,22,-8,4);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+  /* right fan */
+  ctx.save(); ctx.rotate(tailFan*0.022);
+  ctx.beginPath();
+  ctx.moveTo(14,2); ctx.bezierCurveTo(22,22,30,56,34,66);
+  ctx.bezierCurveTo(32,70,28,70,24,64);
+  ctx.bezierCurveTo(16,50,10,22,8,4);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.restore();
+
+  /* ── NECK ── */
+  ctx.save();
+  ctx.translate(0,bodyBob);
+  ctx.beginPath();
+  ctx.moveTo(-12,-34);
+  ctx.bezierCurveTo(-16,-50,-22,-60,-26,-72+headTilt*0.3);
+  ctx.bezierCurveTo(-20,-76,-10,-76,-6,-70+headTilt*0.3);
+  ctx.bezierCurveTo(-2,-60,4,-50,10,-36);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  /* ── HEAD ── */
+  ctx.save();
+  ctx.translate(-16,bodyBob-72);
+  ctx.rotate(headTilt*0.018);
+  /* skull */
+  ctx.beginPath();
+  ctx.ellipse(0,0,18,16,0,0,Math.PI*2);
+  ctx.fill();
+  /* beak */
+  ctx.beginPath();
+  ctx.moveTo(-12,-4);
+  ctx.bezierCurveTo(-22,-6,-42,-4,-46,-1);
+  ctx.bezierCurveTo(-40,2,-22,4,-12,2);
+  ctx.closePath(); ctx.fill();
+  /* lower beak (slight open/close) */
+  var jawOpen = Math.abs(Math.sin(t*0.6))*4;
+  ctx.beginPath();
+  ctx.moveTo(-12,2+jawOpen*0.3);
+  ctx.bezierCurveTo(-22,4+jawOpen,-38,6+jawOpen,-40,4+jawOpen);
+  ctx.bezierCurveTo(-34,8+jawOpen,-20,8,-12,4+jawOpen*0.2);
+  ctx.closePath(); ctx.fill();
+  /* eye socket */
+  ctx.fillStyle="#f9f7f2";
+  ctx.beginPath(); ctx.ellipse(6,-4,6,5,0,0,Math.PI*2); ctx.fill();
+  /* iris */
+  ctx.fillStyle="#111";
+  if(!blink){
+    ctx.beginPath(); ctx.arc(6,-4,3.5,0,Math.PI*2); ctx.fill();
+    /* highlight */
+    ctx.fillStyle="#fff";
+    ctx.beginPath(); ctx.arc(7.5,-5.2,1,0,Math.PI*2); ctx.fill();
+  } else {
+    /* blink — draw lid */
+    ctx.fillStyle="#111";
+    ctx.beginPath(); ctx.ellipse(6,-4,6,2,0,0,Math.PI*2); ctx.fill();
+  }
+  /* crest feathers */
+  ctx.fillStyle="#111";
+  for(var fi=0;fi<4;fi++){
+    var fx=-4+fi*4, baseY=-12;
+    var sway=Math.sin(t*4+fi*0.8)*3;
+    ctx.beginPath();
+    ctx.moveTo(fx,baseY);
+    ctx.quadraticCurveTo(fx-3+sway,-22+fi,-6+fi*2+sway,-28-fi*2);
+    ctx.quadraticCurveTo(fx+2+sway,-22+fi,fx+3,baseY);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+
+  /* ── LEGS ── */
+  ctx.save();
+  ctx.translate(0,bodyBob+36);
+  ctx.lineWidth=3;
+  /* left leg */
+  var legSway=Math.sin(t*1.9)*4;
+  ctx.beginPath();
+  ctx.moveTo(-12,0); ctx.lineTo(-16+legSway,28); ctx.lineTo(-10+legSway,56);
+  ctx.stroke();
+  /* left toes */
+  ctx.beginPath();
+  ctx.moveTo(-10+legSway,56); ctx.lineTo(-28+legSway,64);
+  ctx.moveTo(-10+legSway,56); ctx.lineTo(-8+legSway,66);
+  ctx.moveTo(-10+legSway,56); ctx.lineTo(8+legSway,62);
+  ctx.stroke();
+  /* right leg */
+  ctx.beginPath();
+  ctx.moveTo(12,0); ctx.lineTo(16-legSway,28); ctx.lineTo(10-legSway,56);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(10-legSway,56); ctx.lineTo(-8-legSway,64);
+  ctx.moveTo(10-legSway,56); ctx.lineTo(8-legSway,66);
+  ctx.moveTo(10-legSway,56); ctx.lineTo(26-legSway,60);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+/* ── Exclusion circles (local units) ───────────────────────────── */
+var EXCL=[
+  {dx:0,  dy:0,  r:58},   /* body centre */
+  {dx:-70,dy:-16,r:40},   /* left wing mid */
+  {dx:70, dy:-16,r:40},   /* right wing mid */
+  {dx:-120,dy:-8,r:28},   /* left wingtip */
+  {dx:120, dy:-8,r:28},   /* right wingtip */
+  {dx:-16,dy:-72,r:22},   /* head */
+  {dx:-30,dy:-72,r:12},   /* beak */
+  {dx:0,  dy:55, r:20},   /* tail */
+];
+
+function exclusionsForY(ly){
+  var ivs=[];
+  for(var i=0;i<EXCL.length;i++){
+    var e=EXCL[i];
+    var wx=rx+e.dx*RS, wy=ry+e.dy*RS, wr=e.r*RS*1.4;
+    var dy=Math.abs(ly-wy);
+    if(dy>=wr)continue;
+    var xs=Math.sqrt(wr*wr-dy*dy);
+    ivs.push([wx-xs,wx+xs]);
   }
   ivs.sort(function(a,b){return a[0]-b[0];});
   var m=[];
   for(var j=0;j<ivs.length;j++){
-    if(m.length&&ivs[j][0]<=m[m.length-1][1])m[m.length-1][1]=Math.max(m[m.length-1][1],ivs[j][1]);
+    if(m.length&&ivs[j][0]<=m[m.length-1][1])
+      m[m.length-1][1]=Math.max(m[m.length-1][1],ivs[j][1]);
     else m.push([ivs[j][0],ivs[j][1]]);
   }
   return m;
 }
-function segs(ex){
-  var s=[],cur=PX,right=PX+MW,G=6;
-  for(var i=0;i<ex.length;i++){var a=ex[i][0]-G,b=ex[i][1]+G;if(a>cur+10)s.push([cur,a]);if(b>cur)cur=b;}
+function freeSegs(excl){
+  var s=[],cur=PX,right=PX+MW,G=5;
+  for(var i=0;i<excl.length;i++){
+    var a=excl[i][0]-G,b=excl[i][1]+G;
+    if(a>cur+8)s.push([cur,a]);
+    if(b>cur)cur=b;
+  }
   if(cur<right)s.push([cur,right]);
   return s.length?s:[[PX,PX+MW]];
 }
+
+/* ── Reflow ───────────────────────────────────────────────────────── */
 function reflow(){
   if(!words.length)return;
-  ctx.font=fN();var spw=ctx.measureText(" ").width;
+  ctx.font=fN();
+  var spw=ctx.measureText(" ").width;
   var wi=0,y=TOP+LH;
   while(wi<words.length){
     var by=words[wi].by,row=[];
     while(wi<words.length&&words[wi].by===by)row.push(words[wi++]);
-    var ex=excl(y),sg=segs(ex),si=0,cx=sg[0][0];
+    var ex=exclusionsForY(y),sg=freeSegs(ex),si=0,cx=sg[0][0];
     for(var ri=0;ri<row.length;ri++){
       var wd=row[ri],placed=false;
       while(si<sg.length){
@@ -215,42 +397,86 @@ function reflow(){
         if(cx+wd.w<=sg[si][1]+1){wd.tx=cx;wd.ty=y;cx+=wd.w+spw;placed=true;break;}
         si++;if(si<sg.length)cx=sg[si][0];
       }
-      if(!placed){y+=LH;ex=excl(y);sg=segs(ex);si=0;cx=sg[0][0];wd.tx=cx;wd.ty=y;cx+=wd.w+spw;}
+      if(!placed){
+        y+=LH;ex=exclusionsForY(y);sg=freeSegs(ex);si=0;cx=sg[0][0];
+        wd.tx=cx;wd.ty=y;cx+=wd.w+spw;
+      }
     }
     y+=LH;
   }
 }
 
-/* Input */
-function hit(ex,ey){var rw=RW();return ex>rx-rw*.55&&ex<rx+rw*.55&&ey>ry-rw*.55&&ey<ry+rw*.55;}
-glC.addEventListener("mousedown",function(e){if(hit(e.clientX,e.clientY)){drag=true;dox=e.clientX-rx;doy=e.clientY-ry;glC.style.cursor="grabbing";}});
-window.addEventListener("mousemove",function(e){if(drag){rtx=e.clientX-dox;rty=e.clientY-doy;}else glC.style.cursor=hit(e.clientX,e.clientY)?"grab":"default";});
-window.addEventListener("mouseup",function(){drag=false;glC.style.cursor="default";});
-glC.addEventListener("touchstart",function(e){e.preventDefault();var t=e.touches[0];if(hit(t.clientX,t.clientY)){drag=true;dox=t.clientX-rx;doy=t.clientY-ry;}},{passive:false});
-glC.addEventListener("touchmove",function(e){e.preventDefault();if(drag){rtx=e.touches[0].clientX-dox;rty=e.touches[0].clientY-doy;}},{passive:false});
-glC.addEventListener("touchend",function(){drag=false;});
+/* ── Input ─────────────────────────────────────────────────────────── */
+function hitTest(ex,ey){
+  var R=100*RS;
+  return Math.hypot(ex-rx,ey-ry)<R;
+}
+cvs.addEventListener("mousedown",function(e){
+  if(hitTest(e.clientX,e.clientY)){drag=true;dox=e.clientX-rx;doy=e.clientY-ry;cvs.style.cursor="grabbing";}
+});
+window.addEventListener("mousemove",function(e){
+  if(drag){rtx=e.clientX-dox;rty=e.clientY-doy;}
+  else cvs.style.cursor=hitTest(e.clientX,e.clientY)?"grab":"default";
+});
+window.addEventListener("mouseup",function(){drag=false;cvs.style.cursor="default";});
+cvs.addEventListener("touchstart",function(e){
+  e.preventDefault();var t=e.touches[0];
+  if(hitTest(t.clientX,t.clientY)){drag=true;dox=t.clientX-rx;doy=t.clientY-ry;}
+},{passive:false});
+cvs.addEventListener("touchmove",function(e){
+  e.preventDefault();if(drag){rtx=e.touches[0].clientX-dox;rty=e.touches[0].clientY-doy;}
+},{passive:false});
+cvs.addEventListener("touchend",function(){drag=false;});
 
-/* Loop */
+/* ── Init raven position ──────────────────────────────────────── */
+rx=VW*0.55; ry=VH*0.32; rtx=rx; rty=ry;
+
+/* ── Render loop ─────────────────────────────────────────────────── */
 var last=0;
 function frame(ts){
-  var dt=Math.min((ts-last)/1e3,.05);last=ts;
-  if(!drag){autoT+=dt*.22;var dx=VW*.52+Math.sin(autoT*.7)*VW*.14,dy=VH*.32+Math.sin(autoT)*VH*.07;rtx+=(dx-rtx)*.004;rty+=(dy-rty)*.004;}
-  rx+=(rtx-rx)*.13;ry+=(rty-ry)*.13;
-  if(gl){
-    gl.clearColor(1,1,1,1);gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(prog);
-    var rw=RW();
-    gl.uniform4f(uRaven,(rx-rw*.5)/VW,1-(ry+rw*.5)/VH,rw/VW,rw/VH);
-    if(ravenTex){gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,ravenTex);gl.uniform1i(uTex,0);}
-    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  var dt=Math.min((ts-last)/1000,.05); last=ts; T+=dt;
+  setRS();
+
+  /* raven drift / drag */
+  if(!drag){
+    autoT+=dt*.22;
+    var dx2=VW*.52+Math.sin(autoT*.7)*VW*.15;
+    var dy2=VH*.33+Math.sin(autoT)*VH*.08;
+    rtx+=(dx2-rtx)*.004; rty+=(dy2-rty)*.004;
   }
+  rx+=(rtx-rx)*.12; ry+=(rty-ry)*.12;
+
+  /* clear */
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle="#f9f7f2";
+  ctx.fillRect(0,0,VW,VH);
+
+  /* reflow + lerp words */
   reflow();
-  var L=.14;
-  for(var i=0;i<words.length;i++){words[i].x+=(words[i].tx-words[i].x)*L;words[i].y+=(words[i].ty-words[i].y)*L;}
-  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,VW,VH);
-  ctx.textBaseline="alphabetic";ctx.shadowColor="transparent";ctx.shadowBlur=0;
-  for(var i=0;i<words.length;i++){var w=words[i];if(w.y<-LH*2||w.y>VH+LH*2)continue;ctx.font=w.f;ctx.fillStyle="rgba(12,10,8,.87)";ctx.fillText(w.t,w.x,w.y);}
-  ctx.font="10px Georgia,serif";ctx.fillStyle="rgba(0,0,0,.12)";ctx.fillText("drag the raven",PX,VH-16);
+  var L=.13;
+  for(var i=0;i<words.length;i++){
+    words[i].x+=(words[i].tx-words[i].x)*L;
+    words[i].y+=(words[i].ty-words[i].y)*L;
+  }
+
+  /* draw text */
+  ctx.shadowColor="transparent"; ctx.shadowBlur=0;
+  ctx.textBaseline="alphabetic";
+  for(var i=0;i<words.length;i++){
+    var w=words[i];
+    if(w.y<-LH*2||w.y>VH+LH*2)continue;
+    ctx.font=w.f; ctx.fillStyle="rgba(12,10,8,.86)";
+    ctx.fillText(w.t,w.x,w.y);
+  }
+
+  /* draw animated raven */
+  drawRaven(rx,ry,T);
+
+  /* hint */
+  ctx.font="10px Georgia,serif";
+  ctx.fillStyle="rgba(0,0,0,.11)";
+  ctx.fillText("drag the raven",PX,VH-16);
+
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
