@@ -2,334 +2,227 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>pretext</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=DM+Mono:wght@300&display=swap" rel="stylesheet">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #080808; overflow: hidden; cursor: none; }
-canvas { display: block; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f2ec; }
+canvas { display: block; touch-action: none; }
 #label {
-  position: fixed; bottom: 28px; right: 28px;
+  position: fixed; bottom: 22px; right: 24px;
   font-family: 'DM Mono', monospace; font-weight: 300;
-  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
-  color: rgba(255,255,255,0.1);
-  pointer-events: none; user-select: none;
-}
-#hint {
-  position: fixed; bottom: 28px; left: 28px;
-  font-family: 'DM Mono', monospace; font-weight: 300;
-  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
-  color: rgba(255,255,255,0.1);
-  pointer-events: none; user-select: none;
-  transition: opacity 1s;
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(0,0,0,0.18); pointer-events: none; user-select: none;
 }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="label">@chenglou/pretext · canvas physics</div>
-<div id="hint">move your cursor</div>
+<div id="label">ctx.measureText() · canvas physics</div>
+<script>
+(async function() {
+  const canvas = document.getElementById('c');
+  const ctx    = canvas.getContext('2d');
+  const DPR    = Math.min(window.devicePixelRatio || 1, 2);
+  let VW = window.innerWidth, VH = window.innerHeight;
 
-<script type="module">
-import { prepare, layoutWithLines } from 'https://esm.sh/@chenglou/pretext@0.0.3';
-
-// ── Canvas ──────────────────────────────────────────────────────
-const canvas = document.getElementById('c');
-const ctx    = canvas.getContext('2d');
-const DPR    = Math.min(window.devicePixelRatio || 1, 2);
-
-let VW = window.innerWidth;
-let VH = window.innerHeight;
-
-function setSize() {
-  VW = window.innerWidth;
-  VH = window.innerHeight;
-  canvas.width  = VW * DPR;
-  canvas.height = VH * DPR;
-  canvas.style.width  = VW + 'px';
-  canvas.style.height = VH + 'px';
-}
-
-// ── Typography ──────────────────────────────────────────────────
-const FONT_SIZE = Math.min(Math.max(Math.round(VW / 52), 17), 26);
-const FONT_STR  = `${FONT_SIZE}px "Cormorant Garamond", Georgia, serif`;
-const LINE_H    = FONT_SIZE * 1.85;
-const PAD_X     = () => VW * 0.10;
-const PAD_TOP   = () => VH * 0.14;
-
-const PARAGRAPHS = [
-  `Words have weight. They occupy space. They push and yield and find their balance between breath and boundary.`,
-  `pretext gives geometry to language before the browser renders a single frame. Text that knows its own shape, its own width, its own weight in the world.`,
-  `Each word pre-computed. Each position exact. Each collision resolved by physics and released by motion.`,
-  `Platform APIs already shipped in every browser — still criminally underexplored. The gap between what is possible and what is built remains vast and full of wonder.`,
-];
-
-// ── Word objects ────────────────────────────────────────────────
-// lines[i] = { y, words: [{text, baseX, x, width}] }
-let textLines = [];
-
-function buildLayout() {
-  // Set canvas font so ctx.measureText is accurate
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.font = FONT_STR;
-
-  const maxW  = VW - PAD_X() * 2;
-  const spW   = ctx.measureText(' ').width;
-  let   curY  = PAD_TOP();
-  textLines   = [];
-
-  for (const para of PARAGRAPHS) {
-    const prepared = prepare(para, FONT_STR);
-    const { lines } = layoutWithLines(prepared, maxW, LINE_H);
-
-    for (const line of lines) {
-      const tokens = line.text.split(' ').filter(Boolean);
-      const words  = [];
-      let   curX   = PAD_X();
-
-      for (const tok of tokens) {
-        const w = ctx.measureText(tok).width;
-        words.push({ text: tok, baseX: curX, x: curX, width: w });
-        curX += w + spW;
-      }
-
-      textLines.push({ y: curY, words });
-      curY += LINE_H;
-    }
-
-    curY += LINE_H * 0.6; // paragraph gap
+  function resize() {
+    VW = window.innerWidth; VH = window.innerHeight;
+    canvas.width  = VW * DPR; canvas.height = VH * DPR;
+    canvas.style.width = VW + 'px'; canvas.style.height = VH + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
-}
+  resize();
 
-// ── Snake ───────────────────────────────────────────────────────
-const N        = 120;   // segments
-const SEG_DIST = 10;    // px between segments
-
-// Anatomical radius: peaks ~35% from head, tapers to fine tail
-function segR(i) {
-  const t    = i / (N - 1);
-  const body = Math.sin(Math.PI * Math.pow(t, 0.55));
-  return 3.5 + 15 * body * Math.pow(1 - t * 0.35, 1.2);
-}
-const radii = Float32Array.from({ length: N }, (_, i) => segR(i));
-
-const sx = new Float32Array(N);
-const sy = new Float32Array(N);
-
-let mx = VW * 0.5, my = VH * 0.5;
-let hasMouse = false;
-let autoT    = 0;
-
-// Init snake bunched at center
-for (let i = 0; i < N; i++) {
-  sx[i] = VW * 0.5 + i * SEG_DIST;
-  sy[i] = VH * 0.5;
-}
-
-document.addEventListener('mousemove', e => {
-  mx = e.clientX; my = e.clientY;
-  if (!hasMouse) {
-    hasMouse = true;
-    document.getElementById('hint').style.opacity = '0';
-  }
-});
-document.addEventListener('touchmove', e => {
-  e.preventDefault();
-  mx = e.touches[0].clientX;
-  my = e.touches[0].clientY;
-  hasMouse = true;
-}, { passive: false });
-
-function updateSnake(dt) {
-  if (!hasMouse) {
-    // Lemniscate (figure-8) auto-path
-    autoT += dt * 0.38;
-    const a  = 1 + Math.cos(autoT) ** 2;
-    const cx = VW * 0.5, cy = VH * 0.5;
-    const rx = VW * 0.28, ry = VH * 0.19;
-    mx = cx + rx * Math.sin(autoT) / a;
-    my = cy + ry * Math.sin(autoT) * Math.cos(autoT) / a;
-  }
-
-  // Head chases cursor
-  sx[0] += (mx - sx[0]) * 0.2;
-  sy[0] += (my - sy[0]) * 0.2;
-
-  // Distance-constrained chain
-  for (let i = 1; i < N; i++) {
-    const dx   = sx[i] - sx[i-1];
-    const dy   = sy[i] - sy[i-1];
-    const dist = Math.sqrt(dx*dx + dy*dy) || 0.001;
-    const f    = (dist - SEG_DIST) / dist;
-    sx[i] -= dx * f * 0.5;
-    sy[i] -= dy * f * 0.5;
-  }
-}
-
-// ── Exclusion zones ─────────────────────────────────────────────
-const tmpIntervals = [];
-
-function getExclusions(lineY) {
-  tmpIntervals.length = 0;
-
-  for (let i = 0; i < N; i++) {
-    const r  = radii[i];
-    const dy = Math.abs(sy[i] - lineY);
-    if (dy >= r) continue;
-    // Expand slightly so words don't crowd the body
-    const xs = Math.sqrt(r*r - dy*dy) * 1.55;
-    tmpIntervals.push(sx[i] - xs, sx[i] + xs);
-  }
-
-  // Sort pairs & merge
-  const n   = tmpIntervals.length / 2;
-  const ivs = [];
-  for (let k = 0; k < n; k++) ivs.push([tmpIntervals[k*2], tmpIntervals[k*2+1]]);
-  ivs.sort((a, b) => a[0] - b[0]);
-
-  const merged = [];
-  for (const iv of ivs) {
-    if (merged.length && iv[0] <= merged[merged.length-1][1]) {
-      merged[merged.length-1][1] = Math.max(merged[merged.length-1][1], iv[1]);
-    } else {
-      merged.push([iv[0], iv[1]]);
-    }
-  }
-  return merged;
-}
-
-// ── Relaxation solver ───────────────────────────────────────────
-function resolveWords(words, excl) {
-  if (!words.length) return;
-
-  ctx.font = FONT_STR;
-  const SPACE = ctx.measureText(' ').width;
-  const GAP   = SPACE * 0.55;
-  const targets = new Float32Array(words.length);
-  for (let i = 0; i < words.length; i++) targets[i] = words[i].baseX;
-
-  // Push x clear of all exclusion intervals
-  function clearX(x, w) {
-    let changed = true, safe = 0;
-    while (changed && safe++ < 40) {
-      changed = false;
-      for (const [a, b] of excl) {
-        if (x < b && x + w > a) {
-          const mid = (a + b) * 0.5;
-          x = (x + w * 0.5 > mid) ? b + GAP : a - w - GAP;
-          changed = true;
-          break;
-        }
-      }
-    }
-    return x;
-  }
-
-  // Forward pass — push right
-  for (let i = 0; i < words.length; i++) {
-    if (i > 0) targets[i] = Math.max(targets[i], targets[i-1] + words[i-1].width + SPACE);
-    targets[i] = clearX(targets[i], words[i].width);
-  }
-
-  // Backward pass — pull back toward base where space allows
-  for (let i = words.length - 1; i >= 0; i--) {
-    let t = Math.min(targets[i], words[i].baseX);
-    t = clearX(t, words[i].width);
-    if (i < words.length - 1) t = Math.min(t, targets[i+1] - words[i].width - SPACE);
-    targets[i] = t;
-  }
-
-  // Lerp
-  const L = 0.105;
-  for (let i = 0; i < words.length; i++) {
-    words[i].x += (targets[i] - words[i].x) * L;
-  }
-}
-
-// ── Render ──────────────────────────────────────────────────────
-function drawSnake() {
-  // Draw body back-to-front so head is on top
-  for (let i = N - 1; i >= 0; i--) {
-    const r = radii[i];
-    const t = 1 - i / (N - 1);   // 0 = tail, 1 = head
-
-    // Gradient alpha: luminous body, fading tail
-    const a = 0.04 + t * t * 0.72;
-
-    ctx.beginPath();
-    ctx.arc(sx[i], sy[i], r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,252,242,${a.toFixed(3)})`;
-    ctx.fill();
-  }
-
-  // Glow pass (cheap: just redraw head region with shadowBlur)
-  ctx.save();
-  ctx.shadowColor = 'rgba(255,248,220,0.5)';
-  ctx.shadowBlur  = 22;
-  ctx.beginPath();
-  ctx.arc(sx[0], sy[0], radii[0], 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,252,242,0.9)';
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawText() {
-  ctx.font        = FONT_STR;
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle   = 'rgba(255,252,242,0.80)';
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur  = 0;
-
-  for (const line of textLines) {
-    for (const word of line.words) {
-      ctx.fillText(word.text, word.x, line.y);
-    }
-  }
-}
-
-// ── Loop ────────────────────────────────────────────────────────
-let last = 0;
-function frame(ts) {
-  const dt = Math.min((ts - last) / 1000, 0.05);
-  last = ts;
-
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-
-  // Very slight trail — gives the snake a ghosting feel
-  ctx.fillStyle = 'rgba(8,8,8,0.94)';
-  ctx.fillRect(0, 0, VW, VH);
-
-  updateSnake(dt);
-
-  for (const line of textLines) {
-    const excl = getExclusions(line.y);
-    resolveWords(line.words, excl);
-  }
-
-  drawSnake();
-  drawText();
-
-  requestAnimationFrame(frame);
-}
-
-// ── Init ────────────────────────────────────────────────────────
-async function init() {
-  setSize();
   await document.fonts.ready;
-
-  // Warm up canvas measureText so font metrics are stable
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.font = FONT_STR;
-  ctx.measureText('pretext warm-up');
   await new Promise(r => setTimeout(r, 100));
 
-  buildLayout();
-  requestAnimationFrame(frame);
-}
+  // Typography
+  const FS   = Math.round(Math.min(Math.max(VW / 46, 14), 26));
+  const FONT = FS + 'px "Cormorant Garamond", Georgia, serif';
+  const LH   = FS * 1.95;
+  const PX   = VW * 0.09;
+  const PY   = VH * 0.13;
+  const MW   = VW - PX * 2;
 
-window.addEventListener('resize', () => { setSize(); buildLayout(); });
-init();
+  const PARAGRAPHS = [
+    'Words have weight. They occupy space. They push and yield and find their balance between breath and boundary.',
+    'ctx.measureText() pre-computes every word into a data object with a baseX, a current x, and a targetX. Each frame the dragon emits collision nodes. For every line of text it projects each node onto the line Y axis, computes the exclusion span via the square root of r squared minus dy squared, merges overlapping intervals, then runs a relaxation solver to find stable non-overlapping target positions.',
+    'Words lerp toward those targets each frame — giving the parting and closing flow you see. Platform APIs already shipped in every browser, still criminally underexplored.',
+  ];
+
+  // Word lines
+  let lines = [];
+
+  function buildLines() {
+    lines = [];
+    ctx.font = FONT;
+    const spW = ctx.measureText(' ').width;
+    let y = PY + LH;
+    for (const para of PARAGRAPHS) {
+      const all = para.split(/\s+/).filter(Boolean);
+      let row = [], rw = 0;
+      for (const word of all) {
+        const w = ctx.measureText(word).width;
+        if (row.length && rw + spW + w > MW) {
+          flush(row, y, spW); y += LH; row = []; rw = 0;
+        }
+        row.push({ text: word, w });
+        rw += (row.length > 1 ? spW : 0) + w;
+      }
+      if (row.length) { flush(row, y, spW); y += LH; }
+      y += LH * 0.55;
+    }
+  }
+
+  function flush(row, y, spW) {
+    let x = PX;
+    lines.push({ y, words: row.map(({ text, w }) => {
+      const obj = { text, baseX: x, x, w };
+      x += w + spW; return obj;
+    })});
+  }
+
+  buildLines();
+
+  // Snake / dragon
+  const N = 130, DIST = 9;
+  const radii = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1);
+    radii[i] = 3 + 13 * Math.sin(Math.PI * Math.pow(t, 0.5)) * Math.pow(1 - t * 0.3, 1.3);
+  }
+  const sx = new Float32Array(N), sy = new Float32Array(N);
+  for (let i = 0; i < N; i++) { sx[i] = VW * 0.5 + i * DIST; sy[i] = VH * 0.5; }
+
+  let mx = VW * 0.5, my = VH * 0.5, hasMouse = false, autoT = 0;
+
+  canvas.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; hasMouse = true; });
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); mx = e.touches[0].clientX; my = e.touches[0].clientY; hasMouse = true; }, { passive: false });
+  canvas.addEventListener('touchmove',  e => { e.preventDefault(); mx = e.touches[0].clientX; my = e.touches[0].clientY; }, { passive: false });
+
+  function stepSnake(dt) {
+    if (!hasMouse) {
+      autoT += dt * 0.42;
+      const a = 1 + Math.cos(autoT) ** 2;
+      mx = VW * 0.5 + VW * 0.30 * Math.sin(autoT) / a;
+      my = VH * 0.5 + VH * 0.22 * Math.sin(autoT) * Math.cos(autoT) / a;
+    }
+    sx[0] += (mx - sx[0]) * 0.22;
+    sy[0] += (my - sy[0]) * 0.22;
+    for (let i = 1; i < N; i++) {
+      const dx = sx[i] - sx[i-1], dy = sy[i] - sy[i-1];
+      const d = Math.sqrt(dx*dx + dy*dy) || 1e-6;
+      const f = (d - DIST) / d;
+      sx[i] -= dx * f * 0.5; sy[i] -= dy * f * 0.5;
+    }
+  }
+
+  function resolveWords(words, lineY) {
+    const ivs = [];
+    for (let i = 0; i < N; i++) {
+      const r = radii[i] * 1.6, dy = Math.abs(sy[i] - lineY);
+      if (dy >= r) continue;
+      const xs = Math.sqrt(r*r - dy*dy);
+      ivs.push([sx[i] - xs, sx[i] + xs]);
+    }
+    ivs.sort((a,b) => a[0]-b[0]);
+    const merged = [];
+    for (const iv of ivs) {
+      if (merged.length && iv[0] <= merged[merged.length-1][1])
+        merged[merged.length-1][1] = Math.max(merged[merged.length-1][1], iv[1]);
+      else merged.push([...iv]);
+    }
+    if (!merged.length) { for (const w of words) w.x += (w.baseX - w.x) * 0.10; return; }
+
+    ctx.font = FONT;
+    const spW = ctx.measureText(' ').width, GAP = spW * 0.5;
+    const tgt = words.map(w => w.baseX);
+
+    function clear(x, ww) {
+      let changed = true, g = 0;
+      while (changed && g++ < 60) {
+        changed = false;
+        for (const [a, b] of merged) {
+          if (x < b + GAP && x + ww > a - GAP) {
+            const mid = (a+b)*0.5;
+            x = (x + ww*0.5 > mid) ? b + GAP : a - ww - GAP;
+            changed = true; break;
+          }
+        }
+      }
+      return x;
+    }
+
+    for (let i = 0; i < words.length; i++) {
+      if (i > 0) tgt[i] = Math.max(tgt[i], tgt[i-1] + words[i-1].w + spW);
+      tgt[i] = clear(tgt[i], words[i].w);
+    }
+    for (let i = words.length - 1; i >= 0; i--) {
+      let t = Math.min(tgt[i], words[i].baseX);
+      t = clear(t, words[i].w);
+      if (i < words.length - 1) t = Math.min(t, tgt[i+1] - words[i].w - spW);
+      tgt[i] = t;
+    }
+    for (let i = 0; i < words.length; i++) words[i].x += (tgt[i] - words[i].x) * 0.12;
+  }
+
+  function drawDragon() {
+    ctx.save();
+    // Body back to front
+    for (let i = N-1; i >= 1; i--) {
+      const t = 1 - i/(N-1);
+      const a = 0.07 + t*t*0.58;
+      ctx.beginPath();
+      ctx.arc(sx[i], sy[i], radii[i], 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(185,18,18,' + a.toFixed(3) + ')';
+      ctx.fill();
+    }
+    // Spine
+    ctx.beginPath(); ctx.moveTo(sx[0], sy[0]);
+    for (let i = 1; i < N; i+=2) {
+      const qx = (sx[i]+sx[i-1])*0.5, qy = (sy[i]+sy[i-1])*0.5;
+      ctx.quadraticCurveTo(sx[i-1], sy[i-1], qx, qy);
+    }
+    ctx.strokeStyle = 'rgba(200,25,25,0.10)'; ctx.lineWidth = 1.5; ctx.stroke();
+    // Head glow
+    ctx.shadowColor = 'rgba(200,0,0,0.30)'; ctx.shadowBlur = 20;
+    ctx.beginPath(); ctx.arc(sx[0], sy[0], radii[0]+1, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(215,22,22,0.95)'; ctx.fill();
+    // Eye
+    ctx.shadowBlur = 0;
+    const ex = sx[0] + (sx[0]-sx[3])*0.25, ey = sy[0] + (sy[0]-sy[3])*0.25;
+    ctx.beginPath(); ctx.arc(ex, ey, 1.6, 0, Math.PI*2);
+    ctx.fillStyle = '#fff8f0'; ctx.fill();
+    ctx.restore();
+  }
+
+  function drawText() {
+    ctx.save();
+    ctx.font = FONT; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = 'rgba(12,8,5,0.82)';
+    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+    for (const line of lines)
+      for (const w of line.words)
+        ctx.fillText(w.text, w.x, line.y);
+    ctx.restore();
+  }
+
+  let last = 0;
+  function frame(ts) {
+    const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = '#f5f2ec'; ctx.fillRect(0, 0, VW, VH);
+    stepSnake(dt);
+    for (const line of lines) resolveWords(line.words, line.y);
+    drawDragon(); drawText();
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', () => { resize(); buildLines(); });
+  requestAnimationFrame(frame);
+})();
 </script>
 </body>
 </html>
