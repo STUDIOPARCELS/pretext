@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pretext × three.js</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #060608;
+    overflow: hidden;
+    font-family: 'Syne Mono', monospace;
+  }
+  
+  #canvas { display: block; }
+  
+  #hud {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* ── Top left ── */
+  #title {
+    position: absolute; top: 36px; left: 44px;
+  }
+  #title .eyebrow {
+    font-size: 10px; letter-spacing: 0.32em;
+    color: rgba(255,255,255,0.22);
+    text-transform: uppercase; margin-bottom: 7px;
+  }
+  #title h1 {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 22px; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.88); line-height: 1;
+  }
+  #title .sub {
+    margin-top: 6px;
+    font-size: 10px; letter-spacing: 0.18em;
+    color: rgba(245,146,47,0.5);
+  }
+
+  /* ── Top right counter ── */
+  #counter {
+    position: absolute; top: 36px; right: 44px;
+    text-align: right;
+  }
+  #counter .n {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 36px; color: #f5922f;
+    display: block; line-height: 1;
+    transition: color 0.2s;
+  }
+  #counter .label {
+    font-size: 10px; letter-spacing: 0.28em;
+    color: rgba(245,146,47,0.35); text-transform: uppercase;
+  }
+
+  /* ── Bottom left measurement panel ── */
+  #metrics {
+    position: absolute; bottom: 108px; left: 44px;
+  }
+  .m-row {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-bottom: 3px;
+  }
+  .m-key {
+    font-size: 10px; letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.18); min-width: 130px;
+  }
+  .m-val {
+    font-size: 11px; color: #f5922f;
+    transition: color 0.2s;
+  }
+  .m-val.flash { animation: flash 0.35s ease; }
+  @keyframes flash {
+    0% { color: #fff; }
+    100% { color: #f5922f; }
+  }
+
+  /* ── Bottom input ── */
+  #input-wrap {
+    position: absolute; bottom: 40px;
+    left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px;
+    width: min(500px, calc(100vw - 88px));
+    pointer-events: all;
+  }
+  #txt {
+    flex: 1;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 13px 16px;
+    color: #fff;
+    font-family: 'Syne Mono', monospace;
+    font-size: 13px; letter-spacing: 0.03em;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    caret-color: #f5922f;
+  }
+  #txt:focus {
+    border-color: rgba(245,146,47,0.45);
+    background: rgba(255,255,255,0.065);
+  }
+  #txt::placeholder { color: rgba(255,255,255,0.16); }
+  
+  #go {
+    background: rgba(245,146,47,0.1);
+    border: 1px solid rgba(245,146,47,0.3);
+    border-radius: 4px;
+    padding: 13px 20px;
+    color: #f5922f;
+    font-family: 'Syne Mono', monospace;
+    font-size: 11px; letter-spacing: 0.22em;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  }
+  #go:hover {
+    background: rgba(245,146,47,0.2);
+    border-color: rgba(245,146,47,0.55);
+  }
+  #go:active { transform: scale(0.95); }
+
+  /* ── Hint ── */
+  #hint {
+    position: absolute; bottom: 100px;
+    left: 50%; transform: translateX(-50%);
+    font-size: 10px; letter-spacing: 0.26em;
+    color: rgba(255,255,255,0.12);
+    text-transform: uppercase; text-align: center;
+    white-space: nowrap;
+  }
+  
+  /* ── Loading state ── */
+  #loader {
+    position: fixed; inset: 0;
+    background: #060608;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    transition: opacity 0.6s;
+  }
+  #loader.hidden { opacity: 0; pointer-events: none; }
+  #loader .ltext {
+    font-family: 'Syne Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em;
+    color: rgba(245,146,47,0.6);
+    text-transform: uppercase;
+    margin-top: 16px;
+  }
+  #loader .bar {
+    width: 200px; height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin-top: 12px; overflow: hidden;
+  }
+  #loader .fill {
+    height: 100%; width: 0%;
+    background: #f5922f;
+    transition: width 0.4s ease;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="hud">
+  <div id="title">
+    <div class="eyebrow">@chenglou/pretext  ×  three.js r128</div>
+    <h1>SPATIAL TEXT</h1>
+    <div class="sub">userland text measurement → 3D</div>
+  </div>
+
+  <div id="counter">
+    <span class="n" id="cnt">0</span>
+    <span class="label">nodes</span>
+  </div>
+
+  <div id="metrics">
+    <div class="m-row">
+      <span class="m-key">measured_width</span>
+      <span class="m-val" id="mv">—</span>
+    </div>
+    <div class="m-row">
+      <span class="m-key">line_count</span>
+      <span class="m-val" id="ml">—</span>
+    </div>
+    <div class="m-row">
+      <span class="m-key">line_height</span>
+      <span class="m-val" id="mh">—</span>
+    </div>
+    <div class="m-row">
+      <span class="m-key">char_count</span>
+      <span class="m-val" id="mc">—</span>
+    </div>
+  </div>
+
+  <div id="hint">CLICK TO SPAWN · DRAG TO ORBIT · SCROLL TO ZOOM</div>
+  <div id="input-wrap">
+    <input id="txt" type="text"
+      placeholder="type text → measure → place in 3D…"
+      maxlength="160" autocomplete="off" />
+    <button id="go">SPAWN</button>
+  </div>
+</div>
+
+<div id="loader">
+  <div class="ltext" id="loader-msg">loading pretext</div>
+  <div class="bar"><div class="fill" id="loader-fill"></div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="module">
+
+  // ── Progress helper ─────────────────────────────────────────────────────
+  const fill = document.getElementById('loader-fill');
+  const msg  = document.getElementById('loader-msg');
+  function progress(pct, text) {
+    fill.style.width = pct + '%';
+    if (text) msg.textContent = text;
+  }
+
+  // ── Load pretext ─────────────────────────────────────────────────────────
+  progress(10, 'loading pretext');
+  const { prepare, layoutWithLines } = await import('https://esm.sh/@chenglou/pretext@0.0.3');
+  progress(40, 'loading fonts');
+
+  // ── Wait for fonts ───────────────────────────────────────────────────────
+  await document.fonts.ready;
+  // Extra warm-up to ensure Syne Mono is rasterized
+  const warmCanvas = document.createElement('canvas');
+  const warmCtx = warmCanvas.getContext('2d');
+  warmCtx.font = '400 24px "Syne Mono", monospace';
+  warmCtx.measureText('pretext warm-up');
+  await new Promise(r => setTimeout(r, 120));
+  progress(80, 'building scene');
+
+  // ─── Three.js ────────────────────────────────────────────────────────────
+  const THREE = window.THREE;
+  const cvs = document.getElementById('canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x060608);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x060608, 0.028);
+
+  const cam = new THREE.PerspectiveCamera(
+    56, window.innerWidth / window.innerHeight, 0.1, 400
+  );
+  cam.position.set(0, 0, 22);
+
+  // Pivot group for orbit rotation
+  const pivot = new THREE.Group();
+  scene.add(pivot);
+
+  // ─── Star field ──────────────────────────────────────────────────────────
+  const starGeo = new THREE.BufferGeometry();
+  const sv = new Float32Array(1600 * 3);
+  for (let i = 0; i < 1600 * 3; i++) sv[i] = (Math.random() - 0.5) * 130;
+  starGeo.setAttribute('position', new THREE.BufferAttribute(sv, 3));
+  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
+    color: 0xffffff, size: 0.04,
+    transparent: true, opacity: 0.3
+  })));
+
+  // ─── Font config ─────────────────────────────────────────────────────────
+  const FONT_SPEC  = '400 24px "Syne Mono", monospace';
+  const LINE_H     = 36;   // canvas px
+  const MAX_W      = 360;  // wrap width in canvas px
+  const TEX_SCALE  = 0.017; // canvas px → world units
+  const TEX_DPR    = 2;    // canvas HiDPI
+
+  // ─── Nodes array ─────────────────────────────────────────────────────────
+  const nodes = [];
+
+  // ─── Seed phrases ────────────────────────────────────────────────────────
+  const SEEDS = [
+    'pretext × three.js',
+    'text measured in pure TypeScript',
+    'layout without CSS reflow',
+    'bypassing DOM measurements entirely',
+    'accurate to the pixel',
+    'Lisa Wood Studio',
+    'Sun Valley, Idaho',
+    'Winterblue',
+    'Craters of the Moon',
+    'SOLOKIT — the future of portfolios',
+    'new ways to explore interactions',
+    'spatial text systems',
+    '@chenglou/pretext v0.0.3',
+    'no browser reflow. ever.',
+    'fast · accurate · comprehensive',
+    'WebMCP × spatial interfaces',
+    'the typography layer for 3D',
+  ];
+  let si = 0;
+
+  // ─── Build canvas texture with pretext layout ─────────────────────────────
+  function buildCard(text, lines, measuredW) {
+    const PAD = 26;
+    const META_H = 22;
+    const cW = Math.ceil(measuredW + PAD * 2 + 20);
+    const cH = Math.ceil(lines.length * LINE_H + PAD * 2 + META_H + 8);
+
+    const tc = document.createElement('canvas');
+    tc.width  = cW * TEX_DPR;
+    tc.height = cH * TEX_DPR;
+    const cx = tc.getContext('2d');
+    cx.scale(TEX_DPR, TEX_DPR);
+
+    // Dark bg
+    cx.fillStyle = 'rgba(8, 8, 12, 0.93)';
+    cx.fillRect(0, 0, cW, cH);
+
+    // Subtle inner border
+    cx.strokeStyle = 'rgba(255,255,255,0.09)';
+    cx.lineWidth = 1;
+    cx.strokeRect(0.5, 0.5, cW - 1, cH - 1);
+
+    // Orange top bar — the pretext "measured" accent
+    cx.fillStyle = '#f5922f';
+    cx.fillRect(0, 0, cW, 2);
+
+    // Text lines — using the exact layout pretext computed
+    cx.font = FONT_SPEC;
+    cx.textBaseline = 'top';
+
+    lines.forEach((line, i) => {
+      // Faint per-line width indicator
+      cx.fillStyle = 'rgba(245,146,47,0.06)';
+      cx.fillRect(PAD, PAD + i * LINE_H, line.width, LINE_H - 2);
+
+      // Line text
+      cx.fillStyle = `rgba(255,255,255,${0.78 + (1 - i / lines.length) * 0.16})`;
+      cx.fillText(line.text, PAD, PAD + i * LINE_H + 5);
+    });
+
+    // Measured width bracket line
+    const bracketY = cH - META_H - 6;
+    cx.fillStyle = 'rgba(245,146,47,0.22)';
+    cx.fillRect(PAD, bracketY, measuredW, 1);
+    // End ticks
+    cx.fillStyle = 'rgba(245,146,47,0.5)';
+    cx.fillRect(PAD, bracketY - 4, 1, 9);
+    cx.fillRect(PAD + measuredW - 1, bracketY - 4, 1, 9);
+
+    // Meta readout — pretext output data
+    const meta = `${measuredW.toFixed(1)}px  ·  ${lines.length}L  ·  ${text.replace(/\s/g,'').length}ch`;
+    cx.font = '9px "Syne Mono", monospace';
+    cx.fillStyle = 'rgba(245,146,47,0.38)';
+    cx.fillText(meta, PAD, cH - META_H + 4);
+
+    const texture = new THREE.CanvasTexture(tc);
+    return { texture, cW, cH };
+  }
+
+  // ─── Spawn a text node ────────────────────────────────────────────────────
+  function spawn(text, pos) {
+    // ← THIS IS THE PRETEXT CALL ←
+    // prepare() measures glyph advances for every segment without touching CSS
+    const prepared = prepare(text, FONT_SPEC);
+    // layoutWithLines() performs word-wrap at MAX_W, returns line positions
+    const { lineCount, height, lines } = layoutWithLines(prepared, MAX_W, LINE_H);
+
+    const measuredW = lines.reduce((m, l) => Math.max(m, l.width), 0) || MAX_W * 0.5;
+
+    const { texture, cW, cH } = buildCard(text, lines, measuredW);
+
+    const geo = new THREE.PlaneGeometry(cW * TEX_SCALE, cH * TEX_SCALE);
+    const mat = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+
+    if (pos) {
+      mesh.position.copy(pos);
+    } else {
+      mesh.position.set(
+        (Math.random() - 0.5) * 24,
+        (Math.random() - 0.5) * 14,
+        (Math.random() - 0.5) * 12,
+      );
+    }
+    mesh.rotation.z = (Math.random() - 0.5) * 0.06;
+
+    pivot.add(mesh);
+
+    const nd = {
+      mesh,
+      phX: Math.random() * Math.PI * 2,
+      phY: Math.random() * Math.PI * 2,
+      amp: 0.2 + Math.random() * 0.35,
+      spd: 0.2 + Math.random() * 0.28,
+      born: Date.now(),
+      opacity: 0,
+    };
+    nodes.push(nd);
+
+    // Flash metrics in HUD
+    function flashVal(id, val) {
+      const el = document.getElementById(id);
+      el.textContent = val;
+      el.classList.remove('flash');
+      void el.offsetWidth;
+      el.classList.add('flash');
+    }
+    flashVal('mv', measuredW.toFixed(1) + ' px');
+    flashVal('ml', lineCount + '');
+    flashVal('mh', LINE_H + ' px');
+    flashVal('mc', text.replace(/\s/g,'').length + '');
+    document.getElementById('cnt').textContent = nodes.length;
+  }
+
+  // ─── Seed positions ───────────────────────────────────────────────────────
+  const SEED_POS = [
+    new THREE.Vector3( 0.0,  0.6,  3.5),
+    new THREE.Vector3(-8.0,  2.5, -1.0),
+    new THREE.Vector3( 7.5, -1.5,  0.5),
+    new THREE.Vector3(-3.5, -3.5,  2.0),
+    new THREE.Vector3( 9.0,  1.5, -5.0),
+  ];
+  SEED_POS.forEach((p, i) => {
+    setTimeout(() => spawn(SEEDS[si++ % SEEDS.length], p), 500 + i * 280);
+  });
+
+  progress(100, 'ready');
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hidden');
+    setTimeout(() => document.getElementById('loader').remove(), 700);
+  }, 300);
+
+  // ─── Input ───────────────────────────────────────────────────────────────
+  const txtEl = document.getElementById('txt');
+  const goEl  = document.getElementById('go');
+
+  function doSpawn() {
+    const v = txtEl.value.trim();
+    spawn(v || SEEDS[si++ % SEEDS.length]);
+    txtEl.value = '';
+  }
+  goEl.addEventListener('click', doSpawn);
+  txtEl.addEventListener('keydown', e => { if (e.key === 'Enter') doSpawn(); });
+  txtEl.addEventListener('click', e => e.stopPropagation());
+
+  // ─── Orbit (drag) ────────────────────────────────────────────────────────
+  let dragging = false;
+  let downX = 0, downY = 0;
+  let lastMX = 0, lastMY = 0;
+  let targetRotX = 0, targetRotY = 0;
+  let curRotX = 0, curRotY = 0;
+
+  cvs.addEventListener('mousedown', e => {
+    dragging = true;
+    downX = lastMX = e.clientX;
+    downY = lastMY = e.clientY;
+  });
+
+  window.addEventListener('mouseup', e => {
+    if (!dragging) return;
+    const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
+    if (moved < 5) spawn(SEEDS[si++ % SEEDS.length]);
+    dragging = false;
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    targetRotY += (e.clientX - lastMX) * 0.0055;
+    targetRotX += (e.clientY - lastMY) * 0.0038;
+    targetRotX = Math.max(-0.75, Math.min(0.75, targetRotX));
+    lastMX = e.clientX; lastMY = e.clientY;
+  });
+
+  // Gentle idle parallax
+  let mx = 0, my = 0;
+  window.addEventListener('mousemove', e => {
+    mx = (e.clientX / window.innerWidth  - 0.5) * 2;
+    my = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  window.addEventListener('wheel', e => {
+    cam.position.z = Math.max(5, Math.min(40, cam.position.z + e.deltaY * 0.022));
+  }, { passive: true });
+
+  // ─── Raycaster / hover ────────────────────────────────────────────────────
+  const raycaster = new THREE.Raycaster();
+  const mouseVec  = new THREE.Vector2();
+  let hoveredMesh = null;
+
+  window.addEventListener('mousemove', e => {
+    mouseVec.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+    mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  });
+
+  // ─── Clock & animate ─────────────────────────────────────────────────────
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    // Smooth orbit
+    curRotX += (targetRotX - curRotX) * 0.055;
+    curRotY += (targetRotY - curRotY) * 0.055;
+
+    const idleY = dragging ? 0 : mx * 0.09;
+    const idleX = dragging ? 0 : my * -0.05;
+    pivot.rotation.x = curRotX + idleX;
+    pivot.rotation.y = curRotY + idleY;
+
+    // Hover detection
+    raycaster.setFromCamera(mouseVec, cam);
+    const allMeshes = nodes.map(n => n.mesh);
+    const hits = raycaster.intersectObjects(allMeshes);
+
+    if (hits.length > 0) {
+      hoveredMesh = hits[0].object;
+      document.body.style.cursor = 'pointer';
+    } else {
+      hoveredMesh = null;
+      document.body.style.cursor = 'default';
+    }
+
+    // Animate nodes
+    nodes.forEach(nd => {
+      const age = (Date.now() - nd.born) / 1000;
+      const isHovered = nd.mesh === hoveredMesh;
+
+      // Fade in (1.2s)
+      const fadeTarget = Math.min(1, age * 0.85);
+      // Hover brightness boost
+      const targetOp = isHovered ? Math.min(1, fadeTarget + 0.15) : fadeTarget;
+
+      nd.mesh.material.opacity += (targetOp - nd.mesh.material.opacity) * 0.04;
+
+      // Hover scale
+      const targetScale = isHovered ? 1.025 : 1.0;
+      nd.mesh.scale.x += (targetScale - nd.mesh.scale.x) * 0.08;
+      nd.mesh.scale.y += (targetScale - nd.mesh.scale.y) * 0.08;
+
+      // Gentle float drift
+      nd.mesh.position.x += Math.sin(t * nd.spd       + nd.phX) * 0.00055;
+      nd.mesh.position.y += Math.cos(t * nd.spd * 0.8 + nd.phY) * 0.00045;
+    });
+
+    renderer.render(scene, cam);
+  }
+
+  animate();
+
+  // ─── Resize ──────────────────────────────────────────────────────────────
+  window.addEventListener('resize', () => {
+    cam.aspect = window.innerWidth / window.innerHeight;
+    cam.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+</script>
+</body>
+</html>
